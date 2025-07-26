@@ -23,9 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   );
 
   Future<void> _login() async {
-    // Garante que o teclado seja recolhido
     FocusScope.of(context).unfocus();
-
     setState(() {
       _isLoading = true;
     });
@@ -33,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final cpf = _cpfController.text;
     final password = _passwordController.text;
 
-    // IMPORTANTE: Use o IP do seu computador na rede Wi-Fi.
+    // A URL está correta para testes em celular físico
     final url = Uri.parse('http://192.168.0.107:8000/api/login/');
 
     try {
@@ -46,20 +44,24 @@ class _LoginScreenState extends State<LoginScreen> {
           'cpf': cpf,
           'senha': password,
         }),
-      ).timeout(const Duration(seconds: 10)); // Adiciona um timeout
+      ).timeout(const Duration(seconds: 10));
 
-      // CORREÇÃO: Verifica se o widget ainda está montado antes de usar o context
       if (!mounted) return;
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Estávamos passando um mapa vazio para 'responseData'.
+        // Agora, passamos o 'responseData' completo que recebemos do backend.
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                DashboardScreen(responsavel: responseData['responsavel']),
+            builder: (context) => DashboardScreen(responseData: responseData),
           ),
         );
+        // --- FIM DA CORREÇÃO ---
+
       } else {
         final errorData = jsonDecode(utf8.decode(response.bodyBytes));
         ScaffoldMessenger.of(context).showSnackBar(
@@ -69,7 +71,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      // CORREÇÃO: Verifica se o widget ainda está montado antes de usar o context
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -78,7 +79,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Não foi possível conectar ao servidor. Verifique sua conexão.')),
       );
     } finally {
-      // CORREÇÃO: Verifica se o widget ainda está montado antes de usar o context
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -89,6 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // O resto do build permanece o mesmo...
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -206,7 +207,6 @@ class _LoginScreenState extends State<LoginScreen> {
         prefixIcon: Icon(icon, color: Colors.white70),
         suffixIcon: suffixIcon,
         filled: true,
-        // CORREÇÃO: withOpacity é obsoleto, use .withAlpha() ou .withOpacity() em Color()
         fillColor: const Color.fromRGBO(255, 255, 255, 0.2),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
