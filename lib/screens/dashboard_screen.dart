@@ -1,128 +1,118 @@
-// Arquivo: lib/screens/dashboard_screen.dart
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:csapp/screens/payment_screen.dart';
-import 'package:csapp/screens/settings_screen.dart';
+import 'payment_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
-  final Map<String, dynamic> dashboardData;
-  final String cpf;
+  final Map<String, dynamic> responsavel;
 
-  const DashboardScreen({super.key, required this.dashboardData, required this.cpf});
+  const DashboardScreen({super.key, required this.responsavel});
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-    final mensalidade = dashboardData['ultima_mensalidade'] ?? 0.0;
-    final bool temDebito = (mensalidade is num) && mensalidade > 0;
-
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        title: const Text('Painel Financeiro'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Olá, ${responsavel['nome_completo'].split(' ')[0]}',
+          style: const TextStyle(
+              color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.notifications_none, color: Colors.black54),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+              // Ação para notificações
             },
-          )
+          ),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Olá, ${dashboardData['nome_completo'] ?? 'Responsável'}!',
-              style: Theme.of(context).textTheme.headlineSmall,
+        child: GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          children: <Widget>[
+            _buildDashboardCard(
+              context,
+              icon: Icons.warning_amber_rounded,
+              label: 'Avisos',
+              color: Colors.orange,
+              onTap: () {
+                // Navegar para a tela de Avisos
+              },
             ),
-            const SizedBox(height: 24),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    _buildInfoRow('Aluno(a) em:', dashboardData['serie_ano'] ?? 'N/A'),
-                    const Divider(),
-                    _buildInfoRow(
-                      'Situação da Matrícula:',
-                      dashboardData['situacao_matricula'] ?? 'N/A',
-                      valueColor: (dashboardData['situacao_matricula'] == 'Ativa')
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
-                    ),
-                  ],
-                ),
-              ),
+            _buildDashboardCard(
+              context,
+              icon: Icons.receipt_long,
+              label: 'Verificar Fatura',
+              color: Colors.blue,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PaymentScreen()),
+                );
+              },
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Financeiro',
-              style: Theme.of(context).textTheme.titleLarge,
+            _buildDashboardCard(
+              context,
+              icon: Icons.monetization_on_outlined,
+              label: 'Financeiro',
+              color: Colors.green,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PaymentScreen()),
+                );
+              },
             ),
-            const SizedBox(height: 8),
-            Card(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Última mensalidade devida:',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    Text(
-                      currencyFormat.format(mensalidade),
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: temDebito ? Theme.of(context).colorScheme.error : Colors.green,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: temDebito ? () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => PaymentScreen(cpf: cpf)),
-                        );
-                      } : null,
-                      icon: const Icon(Icons.pix),
-                      label: const Text('PAGAR COM PIX'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.green.shade600,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
+            _buildDashboardCard(
+              context,
+              icon: Icons.settings_outlined,
+              label: 'Configurações',
+              color: Colors.grey,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 16)),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: valueColor,
+  Widget _buildDashboardCard(BuildContext context,
+      {required IconData icon,
+      required String label,
+      required Color color,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(icon, size: 48, color: color),
+            const SizedBox(height: 16),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

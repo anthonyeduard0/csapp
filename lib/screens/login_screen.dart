@@ -1,9 +1,8 @@
-// Arquivo: lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_masked_text2/flutter_masked_text2.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:csapp/screens/dashboard_screen.dart';
+import 'dart:convert';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,60 +12,74 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _cpfController = MaskedTextController(mask: '000.000.000-00');
+  final _cpfController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
-  String? _errorMessage;
+
+  final _cpfFormatter = MaskTextInputFormatter(
+    mask: '###.###.###-##',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
 
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
+    // Garante que o teclado seja recolhido
+    FocusScope.of(context).unfocus();
 
-      // IMPORTANTE: Use 10.0.2.2 para o emulador Android acessar o localhost do seu computador
-      final url = Uri.parse('http://192.168.0.107/api/login/');
-      
-      try {
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'cpf': _cpfController.text,
-            'senha': _passwordController.text,
-          }),
+    setState(() {
+      _isLoading = true;
+    });
+
+    final cpf = _cpfController.text;
+    final password = _passwordController.text;
+
+    // IMPORTANTE: Use o IP do seu computador na rede Wi-Fi.
+    final url = Uri.parse('http://192.168.0.107:8000/api/login/');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'cpf': cpf,
+          'senha': password,
+        }),
+      ).timeout(const Duration(seconds: 10)); // Adiciona um timeout
+
+      // CORREÇÃO: Verifica se o widget ainda está montado antes de usar o context
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                DashboardScreen(responsavel: responseData['responsavel']),
+          ),
         );
-
-          // Substitua o bloco if inteiro por este código
-        if (response.statusCode == 200) {
-          final data = json.decode(utf8.decode(response.bodyBytes));
-
-          // A verificação deve vir IMEDIATAMENTE antes do uso do context.
-          if (!mounted) return;
-
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => DashboardScreen(
-                dashboardData: data,
-                cpf: _cpfController.text,
-              ),
-            ),
-          );
-        } else {
-          final errorData = json.decode(response.body);
-          setState(() {
-            _errorMessage =
-                errorData['error'] ?? 'Ocorreu um erro desconhecido.';
-          });
-        }
-      } catch (e) {
-        setState(() {
-          _errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
-        });
-      } finally {
+      } else {
+        final errorData = jsonDecode(utf8.decode(response.bodyBytes));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              backgroundColor: Colors.redAccent,
+              content: Text('Erro de login: ${errorData['error']}')),
+        );
+      }
+    } catch (e) {
+      // CORREÇÃO: Verifica se o widget ainda está montado antes de usar o context
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text(
+                'Não foi possível conectar ao servidor. Verifique sua conexão.')),
+      );
+    } finally {
+      // CORREÇÃO: Verifica se o widget ainda está montado antes de usar o context
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -77,40 +90,61 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login do Responsável')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _cpfController,
-                decoration: const InputDecoration(
-                  labelText: 'CPF',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF1E3A8A), Color(0xFF8B5CF6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Image.asset(
+                  'assets/images/logo.jpg',
+                  height: 120,
                 ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.length != 14) {
-                    return 'Por favor, insira um CPF válido.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: !_isPasswordVisible,
-                decoration: InputDecoration(
-                  labelText: 'Senha',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock),
+                const SizedBox(height: 20),
+                const Text(
+                  'Seja bem-vindo(a)!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Entrar na conta',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                _buildTextField(
+                  controller: _cpfController,
+                  formatter: _cpfFormatter,
+                  hintText: 'CPF',
+                  icon: Icons.person_outline,
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _passwordController,
+                  hintText: 'Senha',
+                  icon: Icons.lock_outline,
+                  obscureText: !_isPasswordVisible,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      _isPasswordVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.white70,
                     ),
                     onPressed: () {
                       setState(() {
@@ -119,34 +153,64 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.length < 8) {
-                    return 'A senha deve ter no mínimo 8 caracteres.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                      onPressed: _login,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                const SizedBox(height: 40),
+                _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF1E3A8A),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          child: const Text(
+                            'ENTRAR',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                      child: const Text('ENTRAR'),
-                    ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    TextInputType? keyboardType,
+    MaskTextInputFormatter? formatter,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      inputFormatters: formatter != null ? [formatter] : [],
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(color: Colors.white70),
+        prefixIcon: Icon(icon, color: Colors.white70),
+        suffixIcon: suffixIcon,
+        filled: true,
+        // CORREÇÃO: withOpacity é obsoleto, use .withAlpha() ou .withOpacity() em Color()
+        fillColor: const Color.fromRGBO(255, 255, 255, 0.2),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
         ),
       ),
     );
