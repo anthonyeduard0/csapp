@@ -25,7 +25,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   // TODO: Substitua pela URL do seu backend (use o IP da sua máquina para testes no celular)
   // Ex: 'http://192.168.0.107:8000/api'
-  final String _backendUrl = 'http://192.168.0.107:8000/api';
+  final String _backendUrl = 'https://csa-url-app.onrender.com:8000/api';
 
   @override
   void initState() {
