@@ -1,9 +1,19 @@
+// Arquivo: lib/main.dart
+// CÓDIGO CORRIGIDO
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart'; // 1. IMPORTE O PACOTE NECESSÁRIO
 import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 
-void main() {
+void main() async { // 2. TRANSFORME A FUNÇÃO EM 'async'
+  // 3. GARANTA QUE OS WIDGETS DO FLUTTER ESTEJAM PRONTOS
+  WidgetsFlutterBinding.ensureInitialized(); 
+  
+  // 4. INICIALIZE A FORMATAÇÃO DE DATA PARA O PORTUGUÊS DO BRASIL
+  await initializeDateFormatting('pt_BR', null); 
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
@@ -41,3 +51,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
