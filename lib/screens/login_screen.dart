@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
 
     // A URL está correta para testes em celular físico
-    final url = Uri.parse('http://192.168.0.107:8000/api/login/');
+    final url = Uri.parse('http://csa-url-app.onrender.com:8000/api/login/');
 
     try {
       final response = await http.post(
