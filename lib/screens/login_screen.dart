@@ -44,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'cpf': cpf,
           'senha': password,
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 50));
 
       if (!mounted) return;
 
