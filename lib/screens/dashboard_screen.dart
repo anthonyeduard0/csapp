@@ -1,17 +1,52 @@
 // Arquivo: lib/screens/dashboard_screen.dart
-// Substitua o conteúdo do seu arquivo por este código atualizado.
+// CÓDIGO MAIS SEGURO PARA LIDAR COM A AUSÊNCIA DO CAMPO 'valor_final'
 
 import 'package:flutter/material.dart';
 import 'package:csapp/screens/payment_screen.dart';
-import 'package:csapp/screens/invoice_history_screen.dart'; // Importe a nova tela
+import 'package:csapp/screens/invoice_history_screen.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http; // Importe o http
-import 'dart:convert'; // Importe o convert
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-// --- Modelos de Dados (sem alteração) ---
+// --- ATUALIZAÇÃO NO MODELO MENSALIDADE ---
+class Mensalidade {
+  final String id;
+  final DateTime mesReferencia;
+  final double valorNominal;
+  final double valorFinal;
+  final String status;
+  final DateTime dataVencimento;
+
+  Mensalidade({
+    required this.id,
+    required this.mesReferencia,
+    required this.valorNominal,
+    required this.valorFinal,
+    required this.status,
+    required this.dataVencimento,
+  });
+
+  factory Mensalidade.fromJson(Map<String, dynamic> json) {
+    return Mensalidade(
+      id: json['id'],
+      mesReferencia: DateTime.parse(json['mes_referencia']),
+      valorNominal: double.parse(json['valor_nominal']),
+      // --- CORREÇÃO APLICADA AQUI ---
+      // Se 'valor_final' for nulo, usa 'valor_nominal' como fallback.
+      valorFinal: json['valor_final'] != null ? double.parse(json['valor_final']) : double.parse(json['valor_nominal']),
+      status: json['status'],
+      dataVencimento: DateTime.parse(json['data_vencimento']),
+    );
+  }
+}
+
+// O resto do arquivo (DashboardData, Aluno, a tela do Dashboard, etc.)
+// pode continuar exatamente como na versão anterior que te enviei.
+// A única mudança necessária é no factory da classe Mensalidade acima.
+
 class DashboardData {
   final String nomeResponsavel;
-  final String cpfResponsavel; // Adicionado para passar para a próxima tela
+  final String cpfResponsavel;
   final List<Aluno> alunos;
   DashboardData({
     required this.nomeResponsavel,
@@ -23,7 +58,7 @@ class DashboardData {
     List<Aluno> alunos = alunosList.map((i) => Aluno.fromJson(i)).toList();
     return DashboardData(
       nomeResponsavel: json['nome_completo'],
-      cpfResponsavel: json['cpf'], // Pega o CPF da resposta
+      cpfResponsavel: json['cpf'],
       alunos: alunos,
     );
   }
@@ -49,32 +84,10 @@ class Aluno {
   }
 }
 
-class Mensalidade {
-  final String id;
-  final DateTime mesReferencia;
-  final double valorNominal;
-  final String status;
-  Mensalidade(
-      {required this.id,
-      required this.mesReferencia,
-      required this.valorNominal,
-      required this.status});
-  factory Mensalidade.fromJson(Map<String, dynamic> json) {
-    return Mensalidade(
-      id: json['id'],
-      mesReferencia: DateTime.parse(json['mes_referencia']),
-      valorNominal: double.parse(json['valor_nominal']),
-      status: json['status'],
-    );
-  }
-}
 
-// --- TELA TRANSFORMADA EM STATEFULWIDGET ---
 class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
-
   const DashboardScreen({super.key, required this.responseData});
-
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -85,52 +98,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Carrega os dados iniciais recebidos do login
     _dashboardDataFuture = Future.value(DashboardData.fromJson(widget.responseData));
   }
 
-  // Função para recarregar os dados do dashboard a partir da API
   Future<void> _reloadData() async {
     final cpf = DashboardData.fromJson(widget.responseData).cpfResponsavel;
     final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
-    
     try {
-      // Simula o login novamente para obter os dados mais recentes
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        // A senha não é necessária aqui, mas a API pode exigir.
-        // O ideal seria ter um endpoint de "refresh" que não pedisse a senha.
-        // Por simplicidade, vamos apenas recarregar os dados do login.
-        // NOTA: Para um app real, armazene a senha de forma segura ou use tokens.
-        body: jsonEncode(<String, String>{'cpf': cpf, 'senha': ''}),
+        body: jsonEncode({'cpf': cpf, 'senha': ''}),
       );
-
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
-        setState(() {
-          _dashboardDataFuture = Future.value(DashboardData.fromJson(responseData));
-        });
-      } else {
-         // Se o "re-login" falhar, recarrega com os dados antigos para não quebrar a tela
-         setState(() {
-            _dashboardDataFuture = Future.value(DashboardData.fromJson(widget.responseData));
-         });
+        if (mounted) {
+          setState(() {
+            _dashboardDataFuture = Future.value(DashboardData.fromJson(responseData));
+          });
+        }
       }
     } catch (e) {
       print("Erro ao recarregar dados: $e");
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF1E3A8A);
-    const Color accentColor = Color(0xFF8B5CF6);
-    const Color lightBackgroundColor = Color(0xFFF3F4F6);
-
     return Scaffold(
-      backgroundColor: lightBackgroundColor,
+      backgroundColor: const Color(0xFFF3F4F6),
       body: FutureBuilder<DashboardData>(
         future: _dashboardDataFuture,
         builder: (context, snapshot) {
@@ -138,16 +135,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text('Erro ao carregar dados.'));
+            return Center(child: Text('Erro ao carregar dados: ${snapshot.error}'));
           }
-
           final dashboardData = snapshot.data!;
           Mensalidade? proximaMensalidade;
           if (dashboardData.alunos.isNotEmpty &&
               dashboardData.alunos.first.mensalidadesPendentes.isNotEmpty) {
             proximaMensalidade = dashboardData.alunos.first.mensalidadesPendentes.first;
           }
-
           return CustomScrollView(
             slivers: [
               SliverAppBar(
@@ -198,25 +193,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf, Color primaryColor) {
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-    
     if (mensalidade == null) {
       return Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: const Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text(
-            'Tudo em dia! Nenhuma mensalidade pendente.',
-            style: TextStyle(fontSize: 16, color: Colors.green),
-            textAlign: TextAlign.center,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              const Text(
+                'Tudo em dia! Nenhuma mensalidade pendente.',
+                style: TextStyle(fontSize: 16, color: Colors.green),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf),
+                    ),
+                  );
+                },
+                child: const Text('Ver histórico de faturas'),
+              ),
+            ],
           ),
         ),
       );
     }
-
     return Card(
       elevation: 4,
-      shadowColor: Colors.grey.withOpacity(0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -228,14 +236,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   const Text('Próxima mensalidade', style: TextStyle(color: Colors.grey)),
                   Text(
-                    formatadorMoeda.format(mensalidade.valorNominal),
+                    formatadorMoeda.format(mensalidade.valorFinal),
                     style: TextStyle(
                       color: Colors.red[700],
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text('Vence em ${DateFormat('dd/MM/yyyy').format(mensalidade.mesReferencia)}'),
+                  Text('Vence em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}'),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () {
@@ -253,18 +261,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ElevatedButton.icon(
               onPressed: () async {
-                // Navega para a tela de pagamento e ESPERA o resultado
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => PaymentScreen(
                       mensalidadeId: mensalidade.id,
-                      valor: mensalidade.valorNominal.toStringAsFixed(2),
+                      valor: mensalidade.valorFinal.toStringAsFixed(2),
                       mesReferencia: DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
                     ),
                   ),
                 );
-                // Quando voltar da tela de pagamento, recarrega os dados
                 _reloadData();
               },
               icon: const Icon(Icons.pix),
