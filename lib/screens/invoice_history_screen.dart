@@ -1,14 +1,11 @@
 // Arquivo: lib/screens/invoice_history_screen.dart
-// VERSÃO COMPLETA E CORRIGIDA
+// VERSÃO COM NOVA REGRA DE SELEÇÃO DE FATURAS
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:csapp/screens/payment_screen.dart';
-
-// --- CORREÇÃO APLICADA AQUI ---
-// Importa o arquivo do dashboard para ter acesso às classes de modelo.
 import 'dashboard_screen.dart'; 
 
 class InvoiceHistoryScreen extends StatefulWidget {
@@ -37,7 +34,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       if (response.statusCode == 200) {
         List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
         final data = body.map((dynamic item) => AlunoComMensalidades.fromJson(item)).toList();
-        // Armazena todas as faturas para facilitar a filtragem
         _allInvoices = data.expand((aluno) => aluno.mensalidades).toList();
         return data;
       } else {
@@ -49,6 +45,39 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 
   void _onInvoiceSelected(bool? isSelected, Mensalidade mensalidade) {
+    // +++ NOVA FUNCIONALIDADE: Validação de Faturas Anteriores (Frontend) +++
+    final mensalidadesEmAberto = _allInvoices
+        .where((m) => m.status != 'PAGA')
+        .toList()
+        ..sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
+
+    if (isSelected == true) {
+      // Encontra a fatura mais antiga em aberto que ainda não foi selecionada.
+      Mensalidade? faturaMaisAntigaNaoSelecionada;
+      for (final fatura in mensalidadesEmAberto) {
+        if (!_selectedInvoiceIds.contains(fatura.id)) {
+          faturaMaisAntigaNaoSelecionada = fatura;
+          break;
+        }
+      }
+
+      // Se existe uma fatura mais antiga não selecionada, e o usuário está tentando
+      // selecionar uma fatura mais recente, exibe um erro e bloqueia a ação.
+      if (faturaMaisAntigaNaoSelecionada != null &&
+          mensalidade.mesReferencia.isAfter(faturaMaisAntigaNaoSelecionada.mesReferencia)) {
+        
+        final mesFormatado = DateFormat('MMMM', 'pt_BR').format(faturaMaisAntigaNaoSelecionada.mesReferencia);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Por favor, pague ou selecione a fatura de $mesFormatado primeiro.'),
+            backgroundColor: Colors.orange.shade700,
+          ),
+        );
+        return; // Bloqueia a seleção
+      }
+    }
+    // +++ FIM DA NOVA FUNCIONALIDADE +++
+
     setState(() {
       if (isSelected == true) {
         _selectedInvoiceIds.add(mensalidade.id);
@@ -84,7 +113,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
             ),
           ),
         );
-        // Recarrega os dados e limpa a seleção
         setState(() {
           _historyFuture = _fetchInvoiceHistory();
           _selectedInvoiceIds.clear();
@@ -215,6 +243,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     if (mensalidades.isEmpty) {
       return const Center(child: Text('Nenhuma fatura nesta categoria.'));
     }
+    // Ordena as faturas em aberto da mais antiga para a mais nova
+    if (isPending) {
+      mensalidades.sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
+    }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       itemCount: mensalidades.length,
@@ -253,7 +285,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                   activeColor: const Color(0xFF1E3A8A),
                 ),
               if (!isPending)
-                const SizedBox(width: 48), // Espaçamento para alinhar com o checkbox
+                const SizedBox(width: 48),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,5 +335,4 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 }
 
-// --- Função auxiliar para capitalizar a primeira letra ---
 String capitalize(String s) => s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : '';
