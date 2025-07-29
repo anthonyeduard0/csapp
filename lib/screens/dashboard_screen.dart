@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/dashboard_screen.dart
-// VERSÃO COMPLETA COM PUXAR PARA ATUALIZAR E NOVO DESIGN
+// VERSÃO COM A DEFINIÇÃO CORRETA E ÚNICA DA EXTENSÃO 'copyWith'
 
 import 'package:flutter/material.dart';
 import 'package:csapp/screens/login_screen.dart';
@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// (As classes de modelo de dados continuam aqui, sem alterações)
+// --- MODELOS DE DADOS (sem alterações) ---
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -35,21 +35,27 @@ class Mensalidade {
     );
   }
 }
+
 class Aluno {
   final String nomeCompleto;
   final String serieAno;
+  final String statusMatricula;
+  final String? validadeMatriculaFormatada;
   final List<Mensalidade> mensalidadesPendentes;
-  Aluno({ required this.nomeCompleto, required this.serieAno, required this.mensalidadesPendentes });
+  Aluno({ required this.nomeCompleto, required this.serieAno, required this.statusMatricula, this.validadeMatriculaFormatada, required this.mensalidadesPendentes });
   factory Aluno.fromJson(Map<String, dynamic> json) {
     var mensalidadesList = json['mensalidades_pendentes'] as List;
     List<Mensalidade> mensalidades = mensalidadesList.map((i) => Mensalidade.fromJson(i)).toList();
     return Aluno(
       nomeCompleto: json['nome_completo'],
       serieAno: json['serie_ano'],
+      statusMatricula: json['status_matricula'] ?? 'Indefinido',
+      validadeMatriculaFormatada: json['validade_matricula_formatada'],
       mensalidadesPendentes: mensalidades,
     );
   }
 }
+
 class AlunoComMensalidades {
   final String nomeCompleto;
   final List<Mensalidade> mensalidades;
@@ -64,22 +70,30 @@ class AlunoComMensalidades {
     );
   }
 }
+
 class DashboardData {
   final String nomeResponsavel;
   final String cpfResponsavel;
+  final String email;
+  final String? telefone;
+  final String? fotoPerfilUrl;
   final List<Aluno> alunos;
-  DashboardData({ required this.nomeResponsavel, required this.cpfResponsavel, required this.alunos });
+  DashboardData({ required this.nomeResponsavel, required this.cpfResponsavel, required this.email, this.telefone, this.fotoPerfilUrl, required this.alunos });
   factory DashboardData.fromJson(Map<String, dynamic> json) {
     var alunosList = json['alunos'] as List;
     List<Aluno> alunos = alunosList.map((i) => Aluno.fromJson(i)).toList();
     return DashboardData(
       nomeResponsavel: json['nome_completo'],
       cpfResponsavel: json['cpf'],
+      email: json['email'],
+      telefone: json['telefone'],
+      fotoPerfilUrl: json['foto_perfil_url'],
       alunos: alunos,
     );
   }
 }
 
+// --- WIDGET PRINCIPAL (sem alterações) ---
 class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
   const DashboardScreen({super.key, required this.responseData});
@@ -120,89 +134,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ... O resto do build da DashboardScreen continua o mesmo
     const Color primaryColor = Color(0xFF1E3A8A);
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
-      body: FutureBuilder<DashboardData>(
-        future: _dashboardDataFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(child: Text('Erro ao carregar dados: ${snapshot.error}'));
-          }
-          final dashboardData = snapshot.data!;
-          Mensalidade? proximaMensalidade;
-          if (dashboardData.alunos.isNotEmpty &&
-              dashboardData.alunos.first.mensalidadesPendentes.isNotEmpty) {
-            proximaMensalidade = dashboardData.alunos.first.mensalidadesPendentes.first;
-          }
-          
-          // --- ADICIONADO O REFRESHINDICATOR ---
-          return RefreshIndicator(
-            onRefresh: _reloadData,
-            child: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  toolbarHeight: 80,
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  leadingWidth: 64,
-                  leading: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Image.asset('assets/images/logo.jpg'),
-                  ),
-                  title: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Bem-vindo(a),', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
-                      Text(
-                        dashboardData.nomeResponsavel,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  centerTitle: true,
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.exit_to_app),
-                      tooltip: 'Sair',
-                      onPressed: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                          (Route<dynamic> route) => false,
-                        );
-                      },
+    return FutureBuilder<DashboardData>(
+      future: _dashboardDataFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Center(child: Text('Erro ao carregar dados: ${snapshot.error}'));
+        }
+        final dashboardData = snapshot.data!;
+        Mensalidade? proximaMensalidade;
+        if (dashboardData.alunos.isNotEmpty &&
+            dashboardData.alunos.first.mensalidadesPendentes.isNotEmpty) {
+          proximaMensalidade = dashboardData.alunos.first.mensalidadesPendentes.first;
+        }
+        
+        return RefreshIndicator(
+          onRefresh: _reloadData,
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                toolbarHeight: 80,
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                leadingWidth: 64,
+                leading: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Image.asset('assets/images/logo.jpg'),
+                ),
+                title: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text('Bem-vindo(a),', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
+                    Text(
+                      dashboardData.nomeResponsavel,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 8),
                   ],
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, primaryColor),
-                        const SizedBox(height: 24),
-                        _buildAcoesGrid(context, dashboardData.cpfResponsavel),
-                        // --- CARD DO ALUNO REMOVIDO DAQUI ---
-                      ],
-                    ),
+                centerTitle: true,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.exit_to_app),
+                    tooltip: 'Sair',
+                    onPressed: () {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (Route<dynamic> route) => false,
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, primaryColor),
+                      const SizedBox(height: 24),
+                      _buildAcoesGrid(context, dashboardData.cpfResponsavel),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  // (O resto do código, como _buildFaturaCard, _buildDetalheRow, etc., continua o mesmo)
   Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf, Color primaryColor) {
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     if (mensalidade == null) {
@@ -397,6 +407,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// +++ CORREÇÃO: A extensão 'copyWith' agora vive aqui, de forma centralizada. +++
+extension DashboardDataCopyWith on DashboardData {
+  DashboardData copyWith({
+    String? nomeResponsavel,
+    String? cpfResponsavel,
+    String? email,
+    String? telefone,
+    String? fotoPerfilUrl,
+    List<Aluno>? alunos,
+  }) {
+    return DashboardData(
+      nomeResponsavel: nomeResponsavel ?? this.nomeResponsavel,
+      cpfResponsavel: cpfResponsavel ?? this.cpfResponsavel,
+      email: email ?? this.email,
+      telefone: telefone ?? this.telefone,
+      fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl,
+      alunos: alunos ?? this.alunos,
     );
   }
 }

@@ -1,8 +1,11 @@
+// Arquivo: lib/screens/login_screen.dart
+
+import 'package:csapp/screens/main_screen.dart'; // +++ MUDANÇA +++
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'dashboard_screen.dart';
+// import 'dashboard_screen.dart'; // Não é mais necessário aqui
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,7 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final cpf = _cpfController.text;
     final password = _passwordController.text;
 
-    // A URL está correta para testes em celular físico
     final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
 
     try {
@@ -51,17 +53,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         
-        // --- CORREÇÃO APLICADA AQUI ---
-        // Estávamos passando um mapa vazio para 'responseData'.
-        // Agora, passamos o 'responseData' completo que recebemos do backend.
+        // +++ MUDANÇA: Navega para a MainScreen em vez da DashboardScreen +++
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => DashboardScreen(responseData: responseData),
+            builder: (context) => MainScreen(responseData: responseData),
           ),
         );
-        // --- FIM DA CORREÇÃO ---
-
       } else {
         final errorData = jsonDecode(utf8.decode(response.bodyBytes));
         ScaffoldMessenger.of(context).showSnackBar(
@@ -89,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // O resto do build permanece o mesmo...
+    // O build da tela de login continua o mesmo...
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
