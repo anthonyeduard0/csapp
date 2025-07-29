@@ -1,14 +1,15 @@
 // Arquivo: lib/screens/dashboard_screen.dart
-// CÓDIGO MAIS SEGURO PARA LIDAR COM A AUSÊNCIA DO CAMPO 'valor_final'
+// VERSÃO COMPLETA COM PUXAR PARA ATUALIZAR E NOVO DESIGN
 
 import 'package:flutter/material.dart';
+import 'package:csapp/screens/login_screen.dart';
 import 'package:csapp/screens/payment_screen.dart';
 import 'package:csapp/screens/invoice_history_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// --- ATUALIZAÇÃO NO MODELO MENSALIDADE ---
+// (As classes de modelo de dados continuam aqui, sem alterações)
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -16,43 +17,58 @@ class Mensalidade {
   final double valorFinal;
   final String status;
   final DateTime dataVencimento;
-
-  Mensalidade({
-    required this.id,
-    required this.mesReferencia,
-    required this.valorNominal,
-    required this.valorFinal,
-    required this.status,
-    required this.dataVencimento,
-  });
-
+  final double multa;
+  final double juros;
+  final int diasAtraso;
+  Mensalidade({ required this.id, required this.mesReferencia, required this.valorNominal, required this.valorFinal, required this.status, required this.dataVencimento, required this.multa, required this.juros, required this.diasAtraso });
   factory Mensalidade.fromJson(Map<String, dynamic> json) {
     return Mensalidade(
       id: json['id'],
       mesReferencia: DateTime.parse(json['mes_referencia']),
-      valorNominal: double.parse(json['valor_nominal']),
-      // --- CORREÇÃO APLICADA AQUI ---
-      // Se 'valor_final' for nulo, usa 'valor_nominal' como fallback.
-      valorFinal: json['valor_final'] != null ? double.parse(json['valor_final']) : double.parse(json['valor_nominal']),
+      valorNominal: double.tryParse(json['valor_nominal'].toString()) ?? 0.0,
+      valorFinal: double.tryParse(json['valor_final'].toString()) ?? 0.0,
       status: json['status'],
       dataVencimento: DateTime.parse(json['data_vencimento']),
+      multa: double.tryParse(json['multa'].toString()) ?? 0.0,
+      juros: double.tryParse(json['juros'].toString()) ?? 0.0,
+      diasAtraso: json['dias_atraso'] ?? 0,
     );
   }
 }
-
-// O resto do arquivo (DashboardData, Aluno, a tela do Dashboard, etc.)
-// pode continuar exatamente como na versão anterior que te enviei.
-// A única mudança necessária é no factory da classe Mensalidade acima.
-
+class Aluno {
+  final String nomeCompleto;
+  final String serieAno;
+  final List<Mensalidade> mensalidadesPendentes;
+  Aluno({ required this.nomeCompleto, required this.serieAno, required this.mensalidadesPendentes });
+  factory Aluno.fromJson(Map<String, dynamic> json) {
+    var mensalidadesList = json['mensalidades_pendentes'] as List;
+    List<Mensalidade> mensalidades = mensalidadesList.map((i) => Mensalidade.fromJson(i)).toList();
+    return Aluno(
+      nomeCompleto: json['nome_completo'],
+      serieAno: json['serie_ano'],
+      mensalidadesPendentes: mensalidades,
+    );
+  }
+}
+class AlunoComMensalidades {
+  final String nomeCompleto;
+  final List<Mensalidade> mensalidades;
+  AlunoComMensalidades({required this.nomeCompleto, required this.mensalidades});
+  factory AlunoComMensalidades.fromJson(Map<String, dynamic> json) {
+    var mensalidadesList = json['mensalidades'] as List;
+    List<Mensalidade> mensalidades = mensalidadesList.map((i) => Mensalidade.fromJson(i)).toList();
+    mensalidades.sort((a, b) => b.dataVencimento.compareTo(a.dataVencimento));
+    return AlunoComMensalidades(
+      nomeCompleto: json['nome_completo'],
+      mensalidades: mensalidades,
+    );
+  }
+}
 class DashboardData {
   final String nomeResponsavel;
   final String cpfResponsavel;
   final List<Aluno> alunos;
-  DashboardData({
-    required this.nomeResponsavel,
-    required this.cpfResponsavel,
-    required this.alunos,
-  });
+  DashboardData({ required this.nomeResponsavel, required this.cpfResponsavel, required this.alunos });
   factory DashboardData.fromJson(Map<String, dynamic> json) {
     var alunosList = json['alunos'] as List;
     List<Aluno> alunos = alunosList.map((i) => Aluno.fromJson(i)).toList();
@@ -63,27 +79,6 @@ class DashboardData {
     );
   }
 }
-
-class Aluno {
-  final String nomeCompleto;
-  final String serieAno;
-  final List<Mensalidade> mensalidadesPendentes;
-  Aluno(
-      {required this.nomeCompleto,
-      required this.serieAno,
-      required this.mensalidadesPendentes});
-  factory Aluno.fromJson(Map<String, dynamic> json) {
-    var mensalidadesList = json['mensalidades_pendentes'] as List;
-    List<Mensalidade> mensalidades =
-        mensalidadesList.map((i) => Mensalidade.fromJson(i)).toList();
-    return Aluno(
-      nomeCompleto: json['nome_completo'],
-      serieAno: json['serie_ano'],
-      mensalidadesPendentes: mensalidades,
-    );
-  }
-}
-
 
 class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
@@ -143,54 +138,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
               dashboardData.alunos.first.mensalidadesPendentes.isNotEmpty) {
             proximaMensalidade = dashboardData.alunos.first.mensalidadesPendentes.first;
           }
-          return CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                toolbarHeight: 80,
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Olá,', style: TextStyle(fontSize: 16)),
-                    Text(
-                      dashboardData.nomeResponsavel,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.settings, size: 28),
-                    onPressed: () => Navigator.pushNamed(context, '/settings'),
+          
+          // --- ADICIONADO O REFRESHINDICATOR ---
+          return RefreshIndicator(
+            onRefresh: _reloadData,
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  toolbarHeight: 80,
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  leadingWidth: 64,
+                  leading: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Image.asset('assets/images/logo.jpg'),
                   ),
-                  const SizedBox(width: 8),
-                ],
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
+                  title: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, primaryColor),
-                      const SizedBox(height: 24),
-                      _buildAcoesGrid(context, dashboardData.cpfResponsavel),
-                      const SizedBox(height: 24),
-                      ...dashboardData.alunos.map((aluno) => _buildAlunoCard(context, aluno)),
+                      const Text('Bem-vindo(a),', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
+                      Text(
+                        dashboardData.nomeResponsavel,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
+                  centerTitle: true,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.exit_to_app),
+                      tooltip: 'Sair',
+                      onPressed: () {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          (Route<dynamic> route) => false,
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
-              ),
-            ],
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, primaryColor),
+                        const SizedBox(height: 24),
+                        _buildAcoesGrid(context, dashboardData.cpfResponsavel),
+                        // --- CARD DO ALUNO REMOVIDO DAQUI ---
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
+  // (O resto do código, como _buildFaturaCard, _buildDetalheRow, etc., continua o mesmo)
   Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf, Color primaryColor) {
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     if (mensalidade == null) {
@@ -223,68 +235,126 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
     }
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Próxima mensalidade', style: TextStyle(color: Colors.grey)),
-                  Text(
-                    formatadorMoeda.format(mensalidade.valorFinal),
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+    bool estaAtrasada = mensalidade.diasAtraso > 0;
+    return Column(
+      children: [
+        Card(
+          elevation: 4,
+          shadowColor: Colors.grey.withOpacity(0.3),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Mensalidade de ${DateFormat('MMMM', 'pt_BR').format(mensalidade.mesReferencia)}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
+                    if (estaAtrasada)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'EM ATRASO',
+                          style: TextStyle(color: Colors.red.shade800, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  formatadorMoeda.format(mensalidade.valorFinal),
+                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                ),
+                Text(
+                  'Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                if (estaAtrasada) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: Divider(),
                   ),
-                  Text('Vence em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}'),
+                  const Text(
+                    'Detalhamento da Cobrança:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                   const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
+                  _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal)),
+                  const SizedBox(height: 4),
+                  _buildDetalheRow('Multa por atraso', formatadorMoeda.format(mensalidade.multa)),
+                  const SizedBox(height: 4),
+                  _buildDetalheRow('Juros (${mensalidade.diasAtraso} dias)', formatadorMoeda.format(mensalidade.juros)),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf),
+                          builder: (context) => PaymentScreen(
+                            mensalidadeId: mensalidade.id,
+                            valor: mensalidade.valorFinal.toStringAsFixed(2),
+                            mesReferencia: DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
+                          ),
                         ),
                       );
+                      _reloadData();
                     },
-                    child: const Text('Ver todas as faturas'),
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PaymentScreen(
-                      mensalidadeId: mensalidade.id,
-                      valor: mensalidade.valorFinal.toStringAsFixed(2),
-                      mesReferencia: DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
+                    child: const Text('Pagar com Pix', style: TextStyle(fontSize: 16)),
                   ),
-                );
-                _reloadData();
-              },
-              icon: const Icon(Icons.pix),
-              label: const Text('Pagar Pix'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf),
+              ),
+            );
+          },
+          icon: const Icon(Icons.receipt_long_outlined, size: 20),
+          label: const Text('Ver todas as faturas'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: primaryColor,
+            side: BorderSide(color: primaryColor.withOpacity(0.5)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetalheRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.black54)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ],
     );
   }
 
@@ -326,22 +396,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(label, textAlign: TextAlign.center),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAlunoCard(BuildContext context, Aluno aluno) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(top: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFF8B5CF6).withOpacity(0.2),
-          child: const Icon(Icons.person, color: Color(0xFF8B5CF6)),
-        ),
-        title: Text(aluno.nomeCompleto, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(aluno.serieAno),
       ),
     );
   }
