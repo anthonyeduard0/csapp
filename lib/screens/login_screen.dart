@@ -1,11 +1,12 @@
 // Arquivo: lib/screens/login_screen.dart
 
-import 'package:csapp/screens/main_screen.dart'; // +++ MUDANÇA +++
+import 'package:csapp/screens/main_screen.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-// import 'dashboard_screen.dart'; // Não é mais necessário aqui
+import 'package:csapp/screens/legal_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  bool _termsAccepted = false;
 
   final _cpfFormatter = MaskTextInputFormatter(
     mask: '###.###.###-##',
@@ -53,7 +55,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         
-        // +++ MUDANÇA: Navega para a MainScreen em vez da DashboardScreen +++
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -85,9 +86,27 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showLegalScreen(String type) {
+    String title = "";
+    String content = "";
+
+    if (type == "terms") {
+      title = "Termos de Uso";
+      content = "Aqui vai o texto completo dos seus Termos de Uso... \n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. ...";
+    } else {
+      title = "Política de Privacidade";
+      content = "Aqui vai o texto completo da sua Política de Privacidade... \n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. ...";
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => LegalScreen(title: title, content: content),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // O build da tela de login continua o mesmo...
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -152,16 +171,64 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _termsAccepted,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          _termsAccepted = value ?? false;
+                        });
+                      },
+                      checkColor: const Color(0xFF1E3A8A),
+                      activeColor: Colors.white,
+                      side: const BorderSide(color: Colors.white),
+                    ),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                          children: [
+                            const TextSpan(text: 'Eu li e aceito os '),
+                            TextSpan(
+                              text: 'Termos de Uso',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => _showLegalScreen("terms"),
+                            ),
+                            const TextSpan(text: ' e as '),
+                            TextSpan(
+                              text: 'Políticas de Privacidade',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => _showLegalScreen("privacy"),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
                 _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _login,
+                          onPressed: _termsAccepted ? _login : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xFF1E3A8A),
+                            // +++ CORREÇÃO: `withOpacity` substituído pela forma moderna +++
+                            disabledBackgroundColor: Colors.white.withOpacity(0.5),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -205,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
         prefixIcon: Icon(icon, color: Colors.white70),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color.fromRGBO(255, 255, 255, 0.2),
+        fillColor: Colors.white.withOpacity(0.2),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
@@ -214,3 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+// ================================================================== //
+
+

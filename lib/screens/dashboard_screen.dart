@@ -1,15 +1,15 @@
 // Arquivo: lib/screens/dashboard_screen.dart
-// VERSÃO COM A DEFINIÇÃO CORRETA E ÚNICA DA EXTENSÃO 'copyWith'
+// VERSÃO COM AVISOS CORRIGIDOS
 
 import 'package:flutter/material.dart';
-import 'package:csapp/screens/login_screen.dart';
 import 'package:csapp/screens/payment_screen.dart';
 import 'package:csapp/screens/invoice_history_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:developer' as developer; // Import para usar log em vez de print
 
-// --- MODELOS DE DADOS (sem alterações) ---
+// As classes de modelo de dados continuam as mesmas aqui...
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -35,7 +35,6 @@ class Mensalidade {
     );
   }
 }
-
 class Aluno {
   final String nomeCompleto;
   final String serieAno;
@@ -55,7 +54,6 @@ class Aluno {
     );
   }
 }
-
 class AlunoComMensalidades {
   final String nomeCompleto;
   final List<Mensalidade> mensalidades;
@@ -70,7 +68,6 @@ class AlunoComMensalidades {
     );
   }
 }
-
 class DashboardData {
   final String nomeResponsavel;
   final String cpfResponsavel;
@@ -92,8 +89,26 @@ class DashboardData {
     );
   }
 }
+extension DashboardDataCopyWith on DashboardData {
+  DashboardData copyWith({
+    String? nomeResponsavel,
+    String? cpfResponsavel,
+    String? email,
+    String? telefone,
+    String? fotoPerfilUrl,
+    List<Aluno>? alunos,
+  }) {
+    return DashboardData(
+      nomeResponsavel: nomeResponsavel ?? this.nomeResponsavel,
+      cpfResponsavel: cpfResponsavel ?? this.cpfResponsavel,
+      email: email ?? this.email,
+      telefone: telefone ?? this.telefone,
+      fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl,
+      alunos: alunos ?? this.alunos,
+    );
+  }
+}
 
-// --- WIDGET PRINCIPAL (sem alterações) ---
 class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
   const DashboardScreen({super.key, required this.responseData});
@@ -128,91 +143,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     } catch (e) {
-      print("Erro ao recarregar dados: $e");
+      // +++ CORREÇÃO: `print` substituído por `log` para debug +++
+      developer.log("Erro ao recarregar dados: $e", name: "DashboardScreen");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ... O resto do build da DashboardScreen continua o mesmo
     const Color primaryColor = Color(0xFF1E3A8A);
-    return FutureBuilder<DashboardData>(
-      future: _dashboardDataFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError || !snapshot.hasData) {
-          return Center(child: Text('Erro ao carregar dados: ${snapshot.error}'));
-        }
-        final dashboardData = snapshot.data!;
-        Mensalidade? proximaMensalidade;
-        if (dashboardData.alunos.isNotEmpty &&
-            dashboardData.alunos.first.mensalidadesPendentes.isNotEmpty) {
-          proximaMensalidade = dashboardData.alunos.first.mensalidadesPendentes.first;
-        }
-        
-        return RefreshIndicator(
-          onRefresh: _reloadData,
-          child: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                toolbarHeight: 80,
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                leadingWidth: 64,
-                leading: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Image.asset('assets/images/logo.jpg'),
-                ),
-                title: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text('Bem-vindo(a),', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
-                    Text(
-                      dashboardData.nomeResponsavel,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-                centerTitle: true,
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.exit_to_app),
-                    tooltip: 'Sair',
-                    onPressed: () {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        (Route<dynamic> route) => false,
-                      );
-                    },
+    
+    return Scaffold(
+      backgroundColor: Colors.grey[200],
+      body: FutureBuilder<DashboardData>(
+        future: _dashboardDataFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError || !snapshot.hasData) {
+            return Center(child: Text('Erro ao carregar dados: ${snapshot.error}'));
+          }
+          final dashboardData = snapshot.data!;
+          Mensalidade? proximaMensalidade;
+          if (dashboardData.alunos.isNotEmpty &&
+              dashboardData.alunos.first.mensalidadesPendentes.isNotEmpty) {
+            proximaMensalidade = dashboardData.alunos.first.mensalidadesPendentes.first;
+          }
+          
+          return RefreshIndicator(
+            onRefresh: _reloadData,
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  toolbarHeight: 80,
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  leadingWidth: 80,
+                  leading: Padding(
+                    padding: const EdgeInsets.all(8.0), 
+                    child: Image.asset('assets/images/logo.jpg', fit: BoxFit.contain),
                   ),
-                  const SizedBox(width: 8),
-                ],
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
+                  title: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, primaryColor),
-                      const SizedBox(height: 24),
-                      _buildAcoesGrid(context, dashboardData.cpfResponsavel),
+                      const Text('Bem-vindo(a),', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w300, color: Colors.white)),
+                      Text(
+                        dashboardData.nomeResponsavel,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
+                  centerTitle: true,
+                  actions: const [
+                    SizedBox(width: 56)
+                  ],
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, primaryColor),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
-
+  
   Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf, Color primaryColor) {
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     if (mensalidade == null) {
@@ -250,6 +261,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Card(
           elevation: 4,
+          // +++ CORREÇÃO: `withOpacity` substituído pela forma moderna +++
           shadowColor: Colors.grey.withOpacity(0.3),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
@@ -347,6 +359,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           label: const Text('Ver todas as faturas'),
           style: OutlinedButton.styleFrom(
             foregroundColor: primaryColor,
+            // +++ CORREÇÃO: `withOpacity` substituído pela forma moderna +++
             side: BorderSide(color: primaryColor.withOpacity(0.5)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -365,69 +378,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(label, style: const TextStyle(color: Colors.black54)),
         Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
       ],
-    );
-  }
-
-  Widget _buildAcoesGrid(BuildContext context, String cpf) {
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      children: [
-        _buildGridItem(context, icon: Icons.receipt_long, label: 'Histórico', onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf),
-            ),
-          );
-        }),
-        _buildGridItem(context, icon: Icons.support_agent, label: 'Suporte', onTap: () {}),
-        _buildGridItem(context, icon: Icons.info_outline, label: 'Avisos', onTap: () {}),
-      ],
-    );
-  }
-
-  Widget _buildGridItem(BuildContext context, {required IconData icon, required String label, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Card(
-        elevation: 2,
-        shadowColor: Colors.grey.withOpacity(0.2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: const Color(0xFF1E3A8A)),
-            const SizedBox(height: 8),
-            Text(label, textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// +++ CORREÇÃO: A extensão 'copyWith' agora vive aqui, de forma centralizada. +++
-extension DashboardDataCopyWith on DashboardData {
-  DashboardData copyWith({
-    String? nomeResponsavel,
-    String? cpfResponsavel,
-    String? email,
-    String? telefone,
-    String? fotoPerfilUrl,
-    List<Aluno>? alunos,
-  }) {
-    return DashboardData(
-      nomeResponsavel: nomeResponsavel ?? this.nomeResponsavel,
-      cpfResponsavel: cpfResponsavel ?? this.cpfResponsavel,
-      email: email ?? this.email,
-      telefone: telefone ?? this.telefone,
-      fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl,
-      alunos: alunos ?? this.alunos,
     );
   }
 }

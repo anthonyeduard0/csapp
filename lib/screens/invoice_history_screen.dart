@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/invoice_history_screen.dart
-// VERSÃO COM NOVA REGRA DE SELEÇÃO DE FATURAS
+// VERSÃO COM AVISOS CORRIGIDOS
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -27,6 +27,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     _historyFuture = _fetchInvoiceHistory();
   }
 
+  Future<void> _refreshData() async {
+    setState(() {
+      _historyFuture = _fetchInvoiceHistory();
+    });
+  }
+
   Future<List<AlunoComMensalidades>> _fetchInvoiceHistory() async {
     final url = Uri.parse('https://csa-url-app.onrender.com/api/mensalidades/?cpf=${widget.responsavelCpf}');
     try {
@@ -45,14 +51,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 
   void _onInvoiceSelected(bool? isSelected, Mensalidade mensalidade) {
-    // +++ NOVA FUNCIONALIDADE: Validação de Faturas Anteriores (Frontend) +++
     final mensalidadesEmAberto = _allInvoices
         .where((m) => m.status != 'PAGA')
         .toList()
         ..sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
 
     if (isSelected == true) {
-      // Encontra a fatura mais antiga em aberto que ainda não foi selecionada.
       Mensalidade? faturaMaisAntigaNaoSelecionada;
       for (final fatura in mensalidadesEmAberto) {
         if (!_selectedInvoiceIds.contains(fatura.id)) {
@@ -61,8 +65,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         }
       }
 
-      // Se existe uma fatura mais antiga não selecionada, e o usuário está tentando
-      // selecionar uma fatura mais recente, exibe um erro e bloqueia a ação.
       if (faturaMaisAntigaNaoSelecionada != null &&
           mensalidade.mesReferencia.isAfter(faturaMaisAntigaNaoSelecionada.mesReferencia)) {
         
@@ -73,10 +75,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
             backgroundColor: Colors.orange.shade700,
           ),
         );
-        return; // Bloqueia a seleção
+        return;
       }
     }
-    // +++ FIM DA NOVA FUNCIONALIDADE +++
 
     setState(() {
       if (isSelected == true) {
@@ -90,6 +91,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 
   Future<void> _pagarSelecionados(BuildContext context) async {
+    if (!mounted) return;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
@@ -113,8 +115,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
             ),
           ),
         );
+        _refreshData();
         setState(() {
-          _historyFuture = _fetchInvoiceHistory();
           _selectedInvoiceIds.clear();
           _totalSelecionado = 0.0;
         });
@@ -134,62 +136,57 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: Colors.grey[200],
         appBar: AppBar(
           title: const Text('Faturas'),
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: TabBar(
-                  labelColor: primaryColor,
-                  unselectedLabelColor: Colors.white,
-                  indicatorWeight: 0,
-                  dividerColor: Colors.transparent,
-                  indicator: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  tabs: const [
-                    Tab(text: 'Em aberto'),
-                    Tab(text: 'Já pagas'),
-                  ],
-                ),
-              ),
+          bottom: TabBar(
+            indicatorColor: Colors.white,
+            indicatorWeight: 3.0,
+            // +++ CORREÇÃO: `MaterialStateProperty` substituído por `WidgetStateProperty` +++
+            overlayColor: WidgetStateProperty.resolveWith<Color?>(
+              (Set<WidgetState> states) {
+                if (states.contains(WidgetState.pressed)) {
+                  return Colors.white.withOpacity(0.2);
+                }
+                if (states.contains(WidgetState.hovered)) {
+                  return Colors.white.withOpacity(0.1);
+                }
+                return null;
+              },
             ),
+            tabs: const [
+              Tab(text: 'Em aberto'),
+              Tab(text: 'Já pagas'),
+            ],
           ),
         ),
-        body: FutureBuilder<List<AlunoComMensalidades>>(
-          future: _historyFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Erro: ${snapshot.error}'));
-            }
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('Nenhuma fatura encontrada.'));
-            }
-            final mensalidadesEmAberto = _allInvoices.where((m) => m.status != 'PAGA').toList();
-            final mensalidadesPagas = _allInvoices.where((m) => m.status == 'PAGA').toList();
-            return TabBarView(
-              children: [
-                _buildInvoiceList(mensalidadesEmAberto, isPending: true),
-                _buildInvoiceList(mensalidadesPagas, isPending: false),
-              ],
-            );
-          },
+        body: RefreshIndicator(
+          onRefresh: _refreshData,
+          child: FutureBuilder<List<AlunoComMensalidades>>(
+            future: _historyFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Erro: ${snapshot.error}'));
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('Nenhuma fatura encontrada.'));
+              }
+              final mensalidadesEmAberto = _allInvoices.where((m) => m.status != 'PAGA').toList();
+              final mensalidadesPagas = _allInvoices.where((m) => m.status == 'PAGA').toList();
+              return TabBarView(
+                children: [
+                  _buildInvoiceList(mensalidadesEmAberto, isPending: true),
+                  _buildInvoiceList(mensalidadesPagas, isPending: false),
+                ],
+              );
+            },
+          ),
         ),
         bottomNavigationBar: _selectedInvoiceIds.isNotEmpty
             ? _buildPaymentFooter(context)
@@ -197,53 +194,19 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       ),
     );
   }
-
-  Widget _buildPaymentFooter(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)'),
-              Text(
-                NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(_totalSelecionado),
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          ElevatedButton(
-            onPressed: () => _pagarSelecionados(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: const Text('Pagar'),
-          ),
-        ],
-      ),
-    );
-  }
-
+  
   Widget _buildInvoiceList(List<Mensalidade> mensalidades, {required bool isPending}) {
     if (mensalidades.isEmpty) {
-      return const Center(child: Text('Nenhuma fatura nesta categoria.'));
+      return LayoutBuilder(builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: const Center(child: Text('Nenhuma fatura nesta categoria.')),
+          ),
+        );
+      });
     }
-    // Ordena as faturas em aberto da mais antiga para a mais nova
     if (isPending) {
       mensalidades.sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
     }
@@ -283,6 +246,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                   value: isSelected,
                   onChanged: (bool? value) => _onInvoiceSelected(value, mensalidade),
                   activeColor: const Color(0xFF1E3A8A),
+                  shape: const CircleBorder(),
                 ),
               if (!isPending)
                 const SizedBox(width: 48),
@@ -330,6 +294,48 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentFooter(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            // +++ CORREÇÃO: `withOpacity` substituído pela forma moderna +++
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)'),
+              Text(
+                NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(_totalSelecionado),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          ElevatedButton(
+            onPressed: () => _pagarSelecionados(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Pagar'),
+          ),
+        ],
       ),
     );
   }
