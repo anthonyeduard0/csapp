@@ -1,14 +1,16 @@
 // Arquivo: lib/screens/profile_screen.dart
-// VERSÃO COM PUXAR PARA ATUALIZAR
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:csapp/screens/dashboard_screen.dart'; 
+
+// +++ MUDANÇA: Import corrigido +++
+import 'package:csapp/screens/main_screen.dart'; 
 import 'package:csapp/screens/login_screen.dart';
 
+// O resto do arquivo profile_screen.dart continua exatamente o mesmo...
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
   const ProfileScreen({super.key, required this.responseData});
@@ -28,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _dashboardData = DashboardData.fromJson(widget.responseData);
   }
 
-  // +++ MUDANÇA: Lógica de recarregar dados para o RefreshIndicator +++
   Future<void> _reloadData() async {
     final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
     try {
@@ -96,9 +97,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: Colors.grey[200],
       body: RefreshIndicator(
         onRefresh: _reloadData,
-        child: ListView( // Usar ListView permite que a tela inteira seja rolável
+        child: ListView(
           children: [
-            // Cabeçalho do perfil
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
@@ -149,7 +149,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            // Corpo com informações
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -176,7 +175,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            // Rodapé
             Padding(
               padding: const EdgeInsets.only(top: 16.0, bottom: 24.0),
               child: Column(

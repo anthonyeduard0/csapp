@@ -1,12 +1,12 @@
 // Arquivo: lib/screens/invoice_history_screen.dart
-// VERSÃO COM AVISOS CORRIGIDOS
+// VERSÃO COM DESTAQUE NA TABBAR
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:csapp/screens/payment_screen.dart';
-import 'dashboard_screen.dart'; 
+import 'main_screen.dart'; 
 
 class InvoiceHistoryScreen extends StatefulWidget {
   final String responsavelCpf;
@@ -51,6 +51,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 
   void _onInvoiceSelected(bool? isSelected, Mensalidade mensalidade) {
+    // ... (lógica de seleção inalterada)
     final mensalidadesEmAberto = _allInvoices
         .where((m) => m.status != 'PAGA')
         .toList()
@@ -91,6 +92,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 
   Future<void> _pagarSelecionados(BuildContext context) async {
+    // ... (lógica de pagamento inalterada)
     if (!mounted) return;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
@@ -132,35 +134,39 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF1E3A8A);
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: Colors.grey[200],
         appBar: AppBar(
           title: const Text('Faturas'),
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          bottom: TabBar(
-            indicatorColor: Colors.white,
-            indicatorWeight: 3.0,
-            // +++ CORREÇÃO: `MaterialStateProperty` substituído por `WidgetStateProperty` +++
-            overlayColor: WidgetStateProperty.resolveWith<Color?>(
-              (Set<WidgetState> states) {
-                if (states.contains(WidgetState.pressed)) {
-                  return Colors.white.withOpacity(0.2);
-                }
-                if (states.contains(WidgetState.hovered)) {
-                  return Colors.white.withOpacity(0.1);
-                }
-                return null;
-              },
+          // +++ MUDANÇA: O container agora está dentro da AppBar para se destacar do fundo +++
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: Container(
+              color: Theme.of(context).appBarTheme.backgroundColor, // Usa a cor da AppBar
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Container(
+                  height: 45,
+                  decoration: BoxDecoration(
+                    // CORREÇÃO: Trocado withOpacity por withAlpha
+                    color: Colors.black.withAlpha(51), // 0.2 * 255 = 51
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: TabBar(
+                    indicatorPadding: const EdgeInsets.all(4.0),
+                    indicator: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor, // Cor de fundo do app
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    tabs: const [
+                      Tab(text: 'Em aberto'),
+                      Tab(text: 'Já pagas'),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            tabs: const [
-              Tab(text: 'Em aberto'),
-              Tab(text: 'Já pagas'),
-            ],
           ),
         ),
         body: RefreshIndicator(
@@ -195,6 +201,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     );
   }
   
+  // O resto do arquivo continua o mesmo...
   Widget _buildInvoiceList(List<Mensalidade> mensalidades, {required bool isPending}) {
     if (mensalidades.isEmpty) {
       return LayoutBuilder(builder: (context, constraints) {
@@ -228,12 +235,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     final mesFormatado = capitalize(formatadorMesAno.format(mensalidade.mesReferencia));
 
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isSelected ? const BorderSide(color: Color(0xFF1E3A8A), width: 2) : BorderSide.none,
-      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: isPending ? () => _onInvoiceSelected(!isSelected, mensalidade) : null,
@@ -245,7 +246,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 Checkbox(
                   value: isSelected,
                   onChanged: (bool? value) => _onInvoiceSelected(value, mensalidade),
-                  activeColor: const Color(0xFF1E3A8A),
+                  activeColor: Theme.of(context).primaryColor,
                   shape: const CircleBorder(),
                 ),
               if (!isPending)
@@ -261,7 +262,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Vencimento: ${formatadorVencimento.format(mensalidade.dataVencimento)}',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12),
                     ),
                   ],
                 ),
@@ -305,8 +306,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            // +++ CORREÇÃO: `withOpacity` substituído pela forma moderna +++
-            color: Colors.black.withOpacity(0.1),
+            // CORREÇÃO: Trocado withOpacity por withAlpha
+            color: Colors.black.withAlpha(26), // 0.1 * 255 = 25.5 -> 26
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -328,11 +329,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           ),
           ElevatedButton(
             onPressed: () => _pagarSelecionados(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
             child: const Text('Pagar'),
           ),
         ],

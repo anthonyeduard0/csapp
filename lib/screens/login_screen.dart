@@ -227,8 +227,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xFF1E3A8A),
-                            // +++ CORREÇÃO: `withOpacity` substituído pela forma moderna +++
-                            disabledBackgroundColor: Colors.white.withOpacity(0.5),
+                            // CORREÇÃO: Trocado withOpacity por withAlpha
+                            disabledBackgroundColor: Colors.white.withAlpha(128),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -272,7 +272,8 @@ class _LoginScreenState extends State<LoginScreen> {
         prefixIcon: Icon(icon, color: Colors.white70),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.2),
+        // CORREÇÃO: Trocado withOpacity por withAlpha
+        fillColor: Colors.white.withAlpha(51),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
@@ -281,7 +282,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-// ================================================================== //
-
-
