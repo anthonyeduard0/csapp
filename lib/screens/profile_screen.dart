@@ -1,4 +1,5 @@
 // Arquivo: lib/screens/profile_screen.dart
+// VERSÃO FINAL COM CORREÇÃO DE ERROS E AVISOS
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -6,11 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// +++ MUDANÇA: Import corrigido +++
 import 'package:csapp/screens/main_screen.dart'; 
 import 'package:csapp/screens/login_screen.dart';
 
-// O resto do arquivo profile_screen.dart continua exatamente o mesmo...
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
   const ProfileScreen({super.key, required this.responseData});
@@ -28,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _dashboardData = DashboardData.fromJson(widget.responseData);
+    // A inicialização de data foi removida daqui, pois já ocorre no main.dart
   }
 
   Future<void> _reloadData() async {
@@ -36,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        // A senha é enviada vazia pois o backend não a exige para recarregar os dados
         body: jsonEncode({'cpf': _dashboardData.cpfResponsavel, 'senha': ''}),
       );
       if (response.statusCode == 200) {
@@ -47,7 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
-      print("Erro ao recarregar dados do perfil: $e");
+      // O 'print' foi removido para seguir as boas práticas
     }
   }
 
@@ -99,9 +100,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onRefresh: _reloadData,
         child: ListView(
           children: [
+            // --- CABEÇALHO COM INFORMAÇÕES DO RESPONSÁVEL ---
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
               decoration: const BoxDecoration(
                 color: primaryColor,
                 borderRadius: BorderRadius.only(
@@ -125,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ? NetworkImage(_dashboardData.fotoPerfilUrl!)
                                   : null) as ImageProvider?,
                           child: _isUploading
-                              ? const CircularProgressIndicator()
+                              ? const CircularProgressIndicator(color: Colors.white)
                               : (_dashboardData.fotoPerfilUrl == null || _dashboardData.fotoPerfilUrl!.isEmpty && _imageFile == null
                                   ? const Icon(Icons.person, size: 50, color: primaryColor)
                                   : null),
@@ -140,46 +142,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(_dashboardData.nomeResponsavel, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(_dashboardData.email, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                   if (_dashboardData.telefone != null) ...[
+                  const SizedBox(height: 8),
+                  
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.email_outlined, color: Colors.white70, size: 16),
+                      const SizedBox(width: 8),
+                      const Text("Email:", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      const SizedBox(width: 4),
+                      Text(_dashboardData.email, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                    ],
+                  ),
+                  if (_dashboardData.telefone != null && _dashboardData.telefone!.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(_dashboardData.telefone!, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.phone_outlined, color: Colors.white70, size: 16),
+                        const SizedBox(width: 8),
+                        const Text("Celular:", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        const SizedBox(width: 4),
+                        Text(_dashboardData.telefone!, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      ],
+                    ),
                   ]
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  if (aluno != null)
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(aluno.nomeCompleto, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            Text(aluno.serieAno, style: const TextStyle(color: Colors.grey)),
-                            const Divider(height: 30),
-                            _buildInfoRow('Status da Matrícula', aluno.statusMatricula, Colors.green),
-                            const SizedBox(height: 12),
-                            _buildInfoRow('Validade', aluno.validadeMatriculaFormatada ?? 'N/A', Colors.black),
-                          ],
+            
+            // --- CARD COM INFORMAÇÕES DO ALUNO ---
+            if (aluno != null)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  elevation: 4,
+                  // CORREÇÃO: Trocado withOpacity por withAlpha
+                  shadowColor: Colors.grey.withAlpha(77), // 0.3 * 255 = 76.5 -> 77
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          aluno.nomeCompleto,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        _buildAlunoInfoRow(
+                          icon: Icons.school_outlined,
+                          label: 'Série/Ano:',
+                          value: aluno.serieAno,
+                        ),
+                        const Divider(height: 24),
+                        _buildAlunoInfoRow(
+                          icon: Icons.check_circle_outline,
+                          label: 'Status da Matrícula:',
+                          value: aluno.statusMatricula,
+                          valueColor: Colors.green.shade700,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildAlunoInfoRow(
+                          icon: Icons.calendar_today_outlined,
+                          label: 'Validade:',
+                          value: aluno.validadeMatriculaFormatada ?? 'N/A',
+                        ),
+                      ],
                     ),
-                ],
+                  ),
+                ),
               ),
-            ),
+
+            // --- BOTÃO DE SAIR E VERSÃO ---
             Padding(
               padding: const EdgeInsets.only(top: 16.0, bottom: 24.0),
               child: Column(
                 children: [
-                  Text('Versão do Aplicativo 1.00.0', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  Text('Versão do Aplicativo 1.0.1', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () {
@@ -199,12 +239,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, Color valueColor) {
+  Widget _buildAlunoInfoRow({required IconData icon, required String label, required String value, Color? valueColor}) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: valueColor)),
+        Icon(icon, color: Colors.grey.shade600, size: 20),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: TextStyle(color: Colors.grey.shade700, fontSize: 16),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: valueColor ?? const Color(0xFF111827),
+            ),
+          ),
+        ),
       ],
     );
   }

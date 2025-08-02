@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/invoice_history_screen.dart
-// VERSÃO COM DESTAQUE NA TABBAR
+// VERSÃO COM LÓGICA DE ORDENAÇÃO E PAGAMENTO CORRIGIDA
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -30,6 +30,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   Future<void> _refreshData() async {
     setState(() {
       _historyFuture = _fetchInvoiceHistory();
+      _selectedInvoiceIds.clear();
+      _totalSelecionado = 0.0;
     });
   }
 
@@ -40,7 +42,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       if (response.statusCode == 200) {
         List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
         final data = body.map((dynamic item) => AlunoComMensalidades.fromJson(item)).toList();
+        
+        // Junta as faturas de todos os alunos em uma única lista
         _allInvoices = data.expand((aluno) => aluno.mensalidades).toList();
+        
+        // --- CORREÇÃO PRINCIPAL ---
+        // Garante que a lista principal de faturas esteja sempre ordenada da mais antiga para a mais nova.
+        // Isso resolve o problema de faturas de anos diferentes.
+        _allInvoices.sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
+        
         return data;
       } else {
         throw Exception('Falha ao carregar o histórico de faturas.');
@@ -51,13 +61,14 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 
   void _onInvoiceSelected(bool? isSelected, Mensalidade mensalidade) {
-    // ... (lógica de seleção inalterada)
+    // Agora que _allInvoices está sempre ordenada, podemos confiar nela.
     final mensalidadesEmAberto = _allInvoices
-        .where((m) => m.status != 'PAGA')
-        .toList()
-        ..sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
+        .where((m) => m.status == 'PENDENTE' || m.status == 'ATRASADA')
+        .toList(); // Não precisa mais de sort aqui, a lista já está na ordem correta.
 
     if (isSelected == true) {
+      // Encontra a primeira fatura em aberto que ainda não foi selecionada.
+      // Como a lista está ordenada, esta será a mais antiga.
       Mensalidade? faturaMaisAntigaNaoSelecionada;
       for (final fatura in mensalidadesEmAberto) {
         if (!_selectedInvoiceIds.contains(fatura.id)) {
@@ -66,20 +77,23 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         }
       }
 
+      // Se existe uma fatura mais antiga não paga, e o usuário está tentando
+      // pagar uma fatura posterior a ela, bloqueia a ação.
       if (faturaMaisAntigaNaoSelecionada != null &&
           mensalidade.mesReferencia.isAfter(faturaMaisAntigaNaoSelecionada.mesReferencia)) {
         
-        final mesFormatado = DateFormat('MMMM', 'pt_BR').format(faturaMaisAntigaNaoSelecionada.mesReferencia);
+        final mesFormatado = DateFormat('MMMM \'de\' yyyy', 'pt_BR').format(faturaMaisAntigaNaoSelecionada.mesReferencia);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Por favor, pague ou selecione a fatura de $mesFormatado primeiro.'),
+            content: Text('Por favor, pague ou selecione a fatura de ${capitalize(mesFormatado)} primeiro.'),
             backgroundColor: Colors.orange.shade700,
           ),
         );
-        return;
+        return; // Impede a seleção
       }
     }
 
+    // Se a lógica de bloqueio não foi ativada, permite a seleção/deseleção.
     setState(() {
       if (isSelected == true) {
         _selectedInvoiceIds.add(mensalidade.id);
@@ -92,7 +106,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 
   Future<void> _pagarSelecionados(BuildContext context) async {
-    // ... (lógica de pagamento inalterada)
     if (!mounted) return;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
@@ -118,10 +131,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           ),
         );
         _refreshData();
-        setState(() {
-          _selectedInvoiceIds.clear();
-          _totalSelecionado = 0.0;
-        });
 
       } else {
         final error = jsonDecode(response.body)['error'];
@@ -139,29 +148,27 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Faturas'),
-          // +++ MUDANÇA: O container agora está dentro da AppBar para se destacar do fundo +++
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(kToolbarHeight),
             child: Container(
-              color: Theme.of(context).appBarTheme.backgroundColor, // Usa a cor da AppBar
+              color: Theme.of(context).appBarTheme.backgroundColor,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Container(
                   height: 45,
                   decoration: BoxDecoration(
-                    // CORREÇÃO: Trocado withOpacity por withAlpha
-                    color: Colors.black.withAlpha(51), // 0.2 * 255 = 51
+                    color: Colors.black.withAlpha(51),
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                   child: TabBar(
                     indicatorPadding: const EdgeInsets.all(4.0),
                     indicator: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor, // Cor de fundo do app
+                      color: Theme.of(context).scaffoldBackgroundColor,
                       borderRadius: BorderRadius.circular(10.0),
                     ),
                     tabs: const [
                       Tab(text: 'Em aberto'),
-                      Tab(text: 'Já pagas'),
+                      Tab(text: 'Histórico'),
                     ],
                   ),
                 ),
@@ -183,12 +190,14 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return const Center(child: Text('Nenhuma fatura encontrada.'));
               }
-              final mensalidadesEmAberto = _allInvoices.where((m) => m.status != 'PAGA').toList();
-              final mensalidadesPagas = _allInvoices.where((m) => m.status == 'PAGA').toList();
+              // Filtra a lista principal (que já está ordenada) para cada aba
+              final mensalidadesEmAberto = _allInvoices.where((m) => m.status == 'PENDENTE' || m.status == 'ATRASADA').toList();
+              final historicoFaturas = _allInvoices.where((m) => m.status == 'PAGA' || m.status == 'CANCELADA').toList();
+              
               return TabBarView(
                 children: [
                   _buildInvoiceList(mensalidadesEmAberto, isPending: true),
-                  _buildInvoiceList(mensalidadesPagas, isPending: false),
+                  _buildInvoiceList(historicoFaturas, isPending: false),
                 ],
               );
             },
@@ -201,7 +210,21 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     );
   }
   
-  // O resto do arquivo continua o mesmo...
+  Map<String, dynamic> _getStatusInfo(String status) {
+    switch (status) {
+      case 'PAGA':
+        return {'text': 'PAGO', 'color': Colors.green.shade800, 'bgColor': Colors.green.shade100};
+      case 'ATRASADA':
+        return {'text': 'EM ATRASO', 'color': Colors.red.shade800, 'bgColor': Colors.red.shade100};
+      case 'PENDENTE':
+        return {'text': 'PENDENTE', 'color': Colors.orange.shade800, 'bgColor': Colors.orange.shade100};
+      case 'CANCELADA':
+        return {'text': 'CANCELADA', 'color': Colors.grey.shade700, 'bgColor': Colors.grey.shade300};
+      default:
+        return {'text': status, 'color': Colors.black, 'bgColor': Colors.grey.shade200};
+    }
+  }
+
   Widget _buildInvoiceList(List<Mensalidade> mensalidades, {required bool isPending}) {
     if (mensalidades.isEmpty) {
       return LayoutBuilder(builder: (context, constraints) {
@@ -214,14 +237,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         );
       });
     }
-    if (isPending) {
-      mensalidades.sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
-    }
+    // Não é mais necessário ordenar aqui, a lista principal já está correta.
+    // Para a aba de histórico, invertemos a ordem para mostrar as mais recentes primeiro.
+    final listParaExibir = isPending ? mensalidades : mensalidades.reversed.toList();
+
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-      itemCount: mensalidades.length,
+      itemCount: listParaExibir.length,
       itemBuilder: (context, index) {
-        return _buildInvoiceCard(mensalidades[index], isPending: isPending);
+        return _buildInvoiceCard(listParaExibir[index], isPending: isPending);
       },
     );
   }
@@ -231,9 +255,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     final formatadorMesAno = DateFormat('MMMM \'de\' yyyy', 'pt_BR');
     final formatadorVencimento = DateFormat('dd/MM/yyyy');
-    final isPaid = mensalidade.status == 'PAGA';
     final mesFormatado = capitalize(formatadorMesAno.format(mensalidade.mesReferencia));
-
+    
+    final statusInfo = _getStatusInfo(mensalidade.status);
+    
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -271,20 +296,20 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    formatadorMoeda.format(isPaid ? mensalidade.valorNominal : mensalidade.valorFinal),
+                    formatadorMoeda.format(mensalidade.valorFinal),
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isPaid ? Colors.green.shade100 : Colors.red.shade100,
+                      color: statusInfo['bgColor'],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isPaid ? 'PAGO' : 'EM ATRASO',
+                      statusInfo['text'],
                       style: TextStyle(
-                        color: isPaid ? Colors.green.shade800 : Colors.red.shade800,
+                        color: statusInfo['color'],
                         fontWeight: FontWeight.bold,
                         fontSize: 10,
                       ),
@@ -306,8 +331,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            // CORREÇÃO: Trocado withOpacity por withAlpha
-            color: Colors.black.withAlpha(26), // 0.1 * 255 = 25.5 -> 26
+            color: Colors.black.withAlpha(26),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

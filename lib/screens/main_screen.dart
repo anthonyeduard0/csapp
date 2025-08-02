@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/main_screen.dart
-// VERSÃO COM A TELA DE DASHBOARD INTEGRADA PARA MELHOR ORGANIZAÇÃO
+// VERSÃO COM CORREÇÃO NA EXIBIÇÃO DO STATUS DA FATURA
 
 import 'package:flutter/material.dart';
 import 'package:csapp/screens/profile_screen.dart';
@@ -12,7 +12,6 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 // --- INÍCIO: MODELOS DE DADOS ---
-// Todos os modelos de dados que estavam em dashboard_screen.dart agora vivem aqui.
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -91,8 +90,6 @@ class DashboardData {
       alunos: alunos,
     );
   }
-}
-extension DashboardDataCopyWith on DashboardData {
   DashboardData copyWith({
     String? nomeResponsavel,
     String? cpfResponsavel,
@@ -131,7 +128,6 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _pages = [
-      // A primeira aba agora é o _DashboardPage, que está neste mesmo arquivo.
       _DashboardPage(responseData: widget.responseData),
       const SupportScreen(),
       ProfileScreen(responseData: widget.responseData),
@@ -156,8 +152,7 @@ class _MainScreenState extends State<MainScreen> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              // CORREÇÃO: Trocado withOpacity por withAlpha
-              color: Colors.black.withAlpha(26), // 0.1 * 255 = 25.5 -> 26
+              color: Colors.black.withAlpha(26),
               blurRadius: 8,
               offset: const Offset(0, -2),
             ),
@@ -198,7 +193,6 @@ class _MainScreenState extends State<MainScreen> {
 
 
 // --- WIDGET DA PÁGINA FINANCEIRO (ANTIGO DASHBOARD) ---
-// Este widget agora é privado e faz parte do arquivo main_screen.dart
 class _DashboardPage extends StatefulWidget {
   final Map<String, dynamic> responseData;
   const _DashboardPage({required this.responseData});
@@ -222,7 +216,7 @@ class _DashboardPageState extends State<_DashboardPage> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode({'cpf': cpf, 'senha': ''}),
+        body: jsonEncode({'cpf': cpf, 'senha': ''}), // Senha em branco para recarregar dados
       );
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
@@ -313,6 +307,22 @@ class _DashboardPageState extends State<_DashboardPage> {
     );
   }
   
+  // --- FUNÇÃO AUXILIAR PARA PEGAR DADOS DO STATUS ---
+  Map<String, dynamic> _getStatusInfo(String status) {
+    switch (status) {
+      case 'PAGA':
+        return {'text': 'PAGO', 'color': Colors.green.shade800, 'bgColor': Colors.green.shade100};
+      case 'ATRASADA':
+        return {'text': 'EM ATRASO', 'color': Colors.red.shade800, 'bgColor': Colors.red.shade100};
+      case 'PENDENTE':
+        return {'text': 'PENDENTE', 'color': Colors.orange.shade800, 'bgColor': Colors.orange.shade100};
+      case 'CANCELADA':
+        return {'text': 'CANCELADA', 'color': Colors.grey.shade700, 'bgColor': Colors.grey.shade300};
+      default:
+        return {'text': status, 'color': Colors.black, 'bgColor': Colors.grey.shade200};
+    }
+  }
+
   Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf, Color primaryColor) {
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     if (mensalidade == null) {
@@ -345,13 +355,15 @@ class _DashboardPageState extends State<_DashboardPage> {
         ),
       );
     }
-    bool estaAtrasada = mensalidade.diasAtraso > 0;
+
+    // --- LÓGICA DE STATUS CORRIGIDA ---
+    final statusInfo = _getStatusInfo(mensalidade.status);
+
     return Column(
       children: [
         Card(
           elevation: 4,
-          // CORREÇÃO: Trocado withOpacity por withAlpha
-          shadowColor: Colors.grey.withAlpha(77), // 0.3 * 255 = 76.5 -> 77
+          shadowColor: Colors.grey.withAlpha(77),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -365,18 +377,18 @@ class _DashboardPageState extends State<_DashboardPage> {
                       'Mensalidade de ${DateFormat('MMMM', 'pt_BR').format(mensalidade.mesReferencia)}',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    if (estaAtrasada)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'EM ATRASO',
-                          style: TextStyle(color: Colors.red.shade800, fontWeight: FontWeight.bold, fontSize: 12),
-                        ),
+                    // --- WIDGET DE STATUS CORRIGIDO ---
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusInfo['bgColor'],
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      child: Text(
+                        statusInfo['text'],
+                        style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -388,7 +400,7 @@ class _DashboardPageState extends State<_DashboardPage> {
                   'Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}',
                   style: const TextStyle(color: Colors.grey),
                 ),
-                if (estaAtrasada) ...[
+                if (mensalidade.status == 'ATRASADA') ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 16.0),
                     child: Divider(),
@@ -448,7 +460,6 @@ class _DashboardPageState extends State<_DashboardPage> {
           label: const Text('Ver todas as faturas'),
           style: OutlinedButton.styleFrom(
             foregroundColor: primaryColor,
-            // CORREÇÃO: Trocado withOpacity por withAlpha
             side: BorderSide(color: primaryColor.withAlpha(128)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
