@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         body: jsonEncode(<String, String>{
           'cpf': cpf,
-          'senha': password,
+          'password': password,
         }),
       ).timeout(const Duration(seconds: 50));
 
