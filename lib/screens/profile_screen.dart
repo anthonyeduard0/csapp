@@ -7,8 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:csapp/screens/main_screen.dart'; 
-import 'package:csapp/screens/login_screen.dart';
+import 'package:educsa/screens/main_screen.dart'; 
+import 'package:educsa/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;

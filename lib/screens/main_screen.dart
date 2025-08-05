@@ -1,11 +1,11 @@
 // Arquivo: lib/screens/main_screen.dart
-// VERSÃO COM CORREÇÃO NA EXIBIÇÃO DO STATUS DA FATURA
+// VERSÃO SEM A TELA DE SUPORTE
 
 import 'package:flutter/material.dart';
-import 'package:csapp/screens/profile_screen.dart';
-import 'package:csapp/screens/support_screen.dart';
-import 'package:csapp/screens/payment_screen.dart';
-import 'package:csapp/screens/invoice_history_screen.dart';
+import 'package:educsa/screens/profile_screen.dart';
+// import 'package:educsa/screens/support_screen.dart'; // REMOVIDO
+import 'package:educsa/screens/payment_screen.dart';
+import 'package:educsa/screens/invoice_history_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -127,9 +127,10 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    // --- MUDANÇA: LISTA DE PÁGINAS ATUALIZADA ---
     _pages = [
       _DashboardPage(responseData: widget.responseData),
-      const SupportScreen(),
+      // const SupportScreen(), // REMOVIDO
       ProfileScreen(responseData: widget.responseData),
     ];
   }
@@ -159,17 +160,18 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
         child: BottomNavigationBar(
+          // --- MUDANÇA: ITENS DA BARRA DE NAVEGAÇÃO ATUALIZADOS ---
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.monetization_on_outlined),
               activeIcon: Icon(Icons.monetization_on),
               label: 'Financeiro',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.support_agent_outlined),
-              activeIcon: Icon(Icons.support_agent),
-              label: 'Suporte',
-            ),
+            // BottomNavigationBarItem( // REMOVIDO
+            //   icon: Icon(Icons.support_agent_outlined),
+            //   activeIcon: Icon(Icons.support_agent),
+            //   label: 'Suporte',
+            // ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
@@ -216,7 +218,7 @@ class _DashboardPageState extends State<_DashboardPage> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode({'cpf': cpf, 'senha': ''}), // Senha em branco para recarregar dados
+        body: jsonEncode({'cpf': cpf, 'senha': ''}),
       );
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
@@ -307,7 +309,6 @@ class _DashboardPageState extends State<_DashboardPage> {
     );
   }
   
-  // --- FUNÇÃO AUXILIAR PARA PEGAR DADOS DO STATUS ---
   Map<String, dynamic> _getStatusInfo(String status) {
     switch (status) {
       case 'PAGA':
@@ -356,7 +357,6 @@ class _DashboardPageState extends State<_DashboardPage> {
       );
     }
 
-    // --- LÓGICA DE STATUS CORRIGIDA ---
     final statusInfo = _getStatusInfo(mensalidade.status);
 
     return Column(
@@ -377,7 +377,6 @@ class _DashboardPageState extends State<_DashboardPage> {
                       'Mensalidade de ${DateFormat('MMMM', 'pt_BR').format(mensalidade.mesReferencia)}',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    // --- WIDGET DE STATUS CORRIGIDO ---
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(

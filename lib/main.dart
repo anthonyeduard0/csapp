@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CSApp',
+      title: 'EduCSA',
       // +++ TEMA APLICADO +++
       theme: AppTheme.theme,
       darkTheme: ThemeData.dark(), // Pode ser customizado depois
