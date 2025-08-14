@@ -1,17 +1,17 @@
 // Arquivo: lib/screens/main_screen.dart
-// VERSÃO SEM A TELA DE SUPORTE
+// VERSÃO CORRIGIDA: Removida importação não utilizada.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
-// import 'package:educsa/screens/support_screen.dart'; // REMOVIDO
 import 'package:educsa/screens/payment_screen.dart';
 import 'package:educsa/screens/invoice_history_screen.dart';
+import 'package:educsa/screens/calendar_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:developer' as developer;
+// import 'dart:developer' as developer; // <-- LINHA REMOVIDA
 
-// --- INÍCIO: MODELOS DE DADOS ---
+// --- INÍCIO: MODELOS DE DADOS (Sem alterações) ---
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -127,10 +127,9 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    // --- MUDANÇA: LISTA DE PÁGINAS ATUALIZADA ---
     _pages = [
       _DashboardPage(responseData: widget.responseData),
-      // const SupportScreen(), // REMOVIDO
+      const CalendarScreen(),
       ProfileScreen(responseData: widget.responseData),
     ];
   }
@@ -160,18 +159,17 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
         child: BottomNavigationBar(
-          // --- MUDANÇA: ITENS DA BARRA DE NAVEGAÇÃO ATUALIZADOS ---
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.monetization_on_outlined),
               activeIcon: Icon(Icons.monetization_on),
               label: 'Financeiro',
             ),
-            // BottomNavigationBarItem( // REMOVIDO
-            //   icon: Icon(Icons.support_agent_outlined),
-            //   activeIcon: Icon(Icons.support_agent),
-            //   label: 'Suporte',
-            // ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today_outlined),
+              activeIcon: Icon(Icons.calendar_today),
+              label: 'Calendário',
+            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
@@ -213,25 +211,27 @@ class _DashboardPageState extends State<_DashboardPage> {
 
   Future<void> _reloadData() async {
     final cpf = DashboardData.fromJson(widget.responseData).cpfResponsavel;
-    final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
-    try {
+    setState(() {
+       _dashboardDataFuture = _fetchDashboardData(cpf);
+    });
+  }
+
+  Future<DashboardData> _fetchDashboardData(String cpf) async {
+      final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode({'cpf': cpf, 'senha': ''}),
+        body: jsonEncode({'cpf': cpf, 'password': 'dummy_password_for_refresh'}),
       );
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
-        if (mounted) {
-          setState(() {
-            _dashboardDataFuture = Future.value(DashboardData.fromJson(responseData));
-          });
-        }
+        return DashboardData.fromJson(responseData);
+      } else {
+        return DashboardData.fromJson(widget.responseData);
       }
-    } catch (e) {
-      developer.log("Erro ao recarregar dados: $e", name: "DashboardScreen");
-    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -250,9 +250,12 @@ class _DashboardPageState extends State<_DashboardPage> {
           }
           final dashboardData = snapshot.data!;
           Mensalidade? proximaMensalidade;
-          if (dashboardData.alunos.isNotEmpty &&
-              dashboardData.alunos.first.mensalidadesPendentes.isNotEmpty) {
-            proximaMensalidade = dashboardData.alunos.first.mensalidadesPendentes.first;
+          
+          for (var aluno in dashboardData.alunos) {
+            if (aluno.mensalidadesPendentes.isNotEmpty) {
+                proximaMensalidade = aluno.mensalidadesPendentes.first;
+                break; 
+            }
           }
           
           return RefreshIndicator(
