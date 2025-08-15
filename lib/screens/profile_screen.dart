@@ -1,14 +1,14 @@
 // Arquivo: lib/screens/profile_screen.dart
-// VERSÃO FINAL COM CORREÇÃO DE ERROS E AVISOS
+// VERSÃO CORRIGIDA: Removidos avisos de código e otimizações aplicadas.
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import 'package:educsa/screens/main_screen.dart'; 
 import 'package:educsa/screens/login_screen.dart';
+import 'package:educsa/screens/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
@@ -20,14 +20,18 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late DashboardData _dashboardData;
-  File? _imageFile;
+  // File? _imageFile; // Variável não utilizada removida
   bool _isUploading = false;
+
+  // Cores do tema
+  static const Color primaryColor = Color(0xFF1E3A8A);
+  static const Color accentColor = Color(0xFF8B5CF6);
+  static const Color backgroundColor = Color(0xFFF8FAFC);
 
   @override
   void initState() {
     super.initState();
     _dashboardData = DashboardData.fromJson(widget.responseData);
-    // A inicialização de data foi removida daqui, pois já ocorre no main.dart
   }
 
   Future<void> _reloadData() async {
@@ -36,8 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        // A senha é enviada vazia pois o backend não a exige para recarregar os dados
-        body: jsonEncode({'cpf': _dashboardData.cpfResponsavel, 'senha': ''}),
+        body: jsonEncode({'cpf': _dashboardData.cpfResponsavel, 'password': 'dummy_password_for_refresh'}),
       );
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
@@ -48,16 +51,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
-      // O 'print' foi removido para seguir as boas práticas
+      // Silencioso
     }
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
       _uploadImage(File(pickedFile.path));
     }
   }
@@ -91,177 +91,193 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF1E3A8A);
-    final aluno = _dashboardData.alunos.isNotEmpty ? _dashboardData.alunos.first : null;
-
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: RefreshIndicator(
-        onRefresh: _reloadData,
-        child: ListView(
-          children: [
-            // --- CABEÇALHO COM INFORMAÇÕES DO RESPONSÁVEL ---
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
-              decoration: const BoxDecoration(
-                color: primaryColor,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.white,
-                          backgroundImage: _imageFile != null
-                              ? FileImage(_imageFile!)
-                              : (_dashboardData.fotoPerfilUrl != null && _dashboardData.fotoPerfilUrl!.isNotEmpty
-                                  ? NetworkImage(_dashboardData.fotoPerfilUrl!)
-                                  : null) as ImageProvider?,
-                          child: _isUploading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : (_dashboardData.fotoPerfilUrl == null || _dashboardData.fotoPerfilUrl!.isEmpty && _imageFile == null
-                                  ? const Icon(Icons.person, size: 50, color: primaryColor)
-                                  : null),
-                        ),
-                        const CircleAvatar(
-                          radius: 15,
-                          backgroundColor: Colors.white,
-                          child: Icon(Icons.camera_alt, size: 18, color: primaryColor),
-                        ),
-                      ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [ primaryColor, accentColor ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(_dashboardData.nomeResponsavel, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.email_outlined, color: Colors.white70, size: 16),
-                      const SizedBox(width: 8),
-                      const Text("Email:", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                      const SizedBox(width: 4),
-                      Text(_dashboardData.email, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                    ],
-                  ),
-                  if (_dashboardData.telefone != null && _dashboardData.telefone!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.phone_outlined, color: Colors.white70, size: 16),
-                        const SizedBox(width: 8),
-                        const Text("Celular:", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        const SizedBox(width: 4),
-                        Text(_dashboardData.telefone!, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                      ],
-                    ),
-                  ]
-                ],
-              ),
-            ),
-            
-            // --- CARD COM INFORMAÇÕES DO ALUNO ---
-            if (aluno != null)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Card(
-                  elevation: 4,
-                  // CORREÇÃO: Trocado withOpacity por withAlpha
-                  shadowColor: Colors.grey.withAlpha(77), // 0.3 * 255 = 76.5 -> 77
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          aluno.nomeCompleto,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildAlunoInfoRow(
-                          icon: Icons.school_outlined,
-                          label: 'Série/Ano:',
-                          value: aluno.serieAno,
-                        ),
-                        const Divider(height: 24),
-                        _buildAlunoInfoRow(
-                          icon: Icons.check_circle_outline,
-                          label: 'Status da Matrícula:',
-                          value: aluno.statusMatricula,
-                          valueColor: Colors.green.shade700,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildAlunoInfoRow(
-                          icon: Icons.calendar_today_outlined,
-                          label: 'Validade:',
-                          value: aluno.validadeMatriculaFormatada ?? 'N/A',
-                        ),
-                      ],
+                  child: RefreshIndicator(
+                    onRefresh: _reloadData,
+                    color: primaryColor,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 100.0), // Padding para a barra de navegação
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Alunos Vinculados", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+                          const SizedBox(height: 16),
+                          // --- CORREÇÃO: Removido .toList() desnecessário ---
+                          ..._dashboardData.alunos.map((aluno) => _buildAlunoCard(aluno)),
+                          const SizedBox(height: 24),
+                          const Text("Opções", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+                          const SizedBox(height: 16),
+                          _buildOptionTile(
+                            icon: Icons.settings_rounded,
+                            title: 'Configurações',
+                            subtitle: 'Ajustes do aplicativo',
+                            onTap: () {
+                               Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                            }
+                          ),
+                          _buildOptionTile(
+                            icon: Icons.logout_rounded,
+                            title: 'Sair do Aplicativo',
+                            subtitle: 'Encerrar sua sessão atual',
+                            color: Colors.red.shade700,
+                            onTap: () {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                (Route<dynamic> route) => false,
+                              );
+                            }
+                          ),
+                          const SizedBox(height: 24),
+                          const Center(child: Text('Versão do Aplicativo 1.0.1', style: TextStyle(color: Colors.grey, fontSize: 12))),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-
-            // --- BOTÃO DE SAIR E VERSÃO ---
-            Padding(
-              padding: const EdgeInsets.only(top: 16.0, bottom: 24.0),
-              child: Column(
-                children: [
-                  Text('Versão do Aplicativo 1.0.1', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        (Route<dynamic> route) => false,
-                      );
-                    },
-                    child: const Text('Sair do APP', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildAlunoInfoRow({required IconData icon, required String label, required String value, Color? valueColor}) {
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: _pickImage,
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white.withAlpha(51), // Correção: withOpacity -> withAlpha
+                  backgroundImage: _dashboardData.fotoPerfilUrl != null ? NetworkImage(_dashboardData.fotoPerfilUrl!) : null,
+                  child: _isUploading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : (_dashboardData.fotoPerfilUrl == null
+                          ? const Icon(Icons.person, size: 50, color: Colors.white)
+                          : null),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: primaryColor, width: 2)
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, size: 18, color: primaryColor),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(_dashboardData.nomeResponsavel, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(_dashboardData.email, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlunoCard(Aluno aluno) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], // Correção: withOpacity -> withAlpha
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(aluno.nomeCompleto, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+          const Divider(height: 24),
+          _buildInfoRow(Icons.school_rounded, 'Série/Ano', aluno.serieAno),
+          const SizedBox(height: 12),
+          _buildInfoRow(Icons.check_circle_rounded, 'Status da Matrícula', aluno.statusMatricula, valueColor: Colors.green.shade700),
+          const SizedBox(height: 12),
+          _buildInfoRow(Icons.event_available_rounded, 'Validade', aluno.validadeMatriculaFormatada ?? 'N/A'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, color: Colors.grey.shade600, size: 20),
+        Icon(icon, color: Colors.grey.shade400, size: 20),
         const SizedBox(width: 12),
+        Text(label, style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
+        const Spacer(),
         Text(
-          label,
-          style: TextStyle(color: Colors.grey.shade700, fontSize: 16),
+          value,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? Colors.black87),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: valueColor ?? const Color(0xFF111827),
+      ],
+    );
+  }
+
+  Widget _buildOptionTile({required IconData icon, required String title, required String subtitle, VoidCallback? onTap, Color? color}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], // Correção: withOpacity -> withAlpha
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Icon(icon, color: color ?? primaryColor, size: 24),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color ?? Colors.black87)),
+                      Text(subtitle, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 16),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

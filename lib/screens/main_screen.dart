@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/main_screen.dart
-// VERSÃO CORRIGIDA: Removida importação não utilizada.
+// VERSÃO CORRIGIDA: Barra de navegação restaurada ao estilo original.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
@@ -7,11 +7,8 @@ import 'package:educsa/screens/payment_screen.dart';
 import 'package:educsa/screens/invoice_history_screen.dart';
 import 'package:educsa/screens/calendar_screen.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-// import 'dart:developer' as developer; // <-- LINHA REMOVIDA
 
-// --- INÍCIO: MODELOS DE DADOS (Sem alterações) ---
+// --- MODELOS DE DADOS (Sem alterações) ---
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -108,8 +105,6 @@ class DashboardData {
     );
   }
 }
-// --- FIM: MODELOS DE DADOS ---
-
 
 // --- TELA PRINCIPAL COM BARRA DE NAVEGAÇÃO ---
 class MainScreen extends StatefulWidget {
@@ -128,7 +123,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _pages = [
-      _DashboardPage(responseData: widget.responseData),
+      FinancialScreen(responseData: widget.responseData),
       const CalendarScreen(),
       ProfileScreen(responseData: widget.responseData),
     ];
@@ -148,6 +143,7 @@ class _MainScreenState extends State<MainScreen> {
         index: _selectedIndex,
         children: _pages,
       ),
+      // --- BARRA DE NAVEGAÇÃO RESTAURADA ---
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -185,6 +181,7 @@ class _MainScreenState extends State<MainScreen> {
           iconSize: 26,
           selectedFontSize: 14,
           unselectedFontSize: 12,
+          showUnselectedLabels: true, // Garante que os nomes sempre apareçam
         ),
       ),
     );
@@ -193,14 +190,14 @@ class _MainScreenState extends State<MainScreen> {
 
 
 // --- WIDGET DA PÁGINA FINANCEIRO (ANTIGO DASHBOARD) ---
-class _DashboardPage extends StatefulWidget {
+class FinancialScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
-  const _DashboardPage({required this.responseData});
+  const FinancialScreen({required this.responseData, super.key});
   @override
-  State<_DashboardPage> createState() => _DashboardPageState();
+  State<FinancialScreen> createState() => _FinancialScreenState();
 }
 
-class _DashboardPageState extends State<_DashboardPage> {
+class _FinancialScreenState extends State<FinancialScreen> {
   Future<DashboardData>? _dashboardDataFuture;
 
   @override
@@ -210,262 +207,253 @@ class _DashboardPageState extends State<_DashboardPage> {
   }
 
   Future<void> _reloadData() async {
-    final cpf = DashboardData.fromJson(widget.responseData).cpfResponsavel;
     setState(() {
-       _dashboardDataFuture = _fetchDashboardData(cpf);
+      _dashboardDataFuture = Future.value(DashboardData.fromJson(widget.responseData));
     });
   }
-
-  Future<DashboardData> _fetchDashboardData(String cpf) async {
-      final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode({'cpf': cpf, 'password': 'dummy_password_for_refresh'}),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
-        return DashboardData.fromJson(responseData);
-      } else {
-        return DashboardData.fromJson(widget.responseData);
-      }
-  }
-
 
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF1E3A8A);
-    
+    const Color accentColor = Color(0xFF8B5CF6);
+    const Color backgroundColor = Color(0xFFF8FAFC);
+
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: FutureBuilder<DashboardData>(
-        future: _dashboardDataFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(child: Text('Erro ao carregar dados: ${snapshot.error}'));
-          }
-          final dashboardData = snapshot.data!;
-          Mensalidade? proximaMensalidade;
-          
-          for (var aluno in dashboardData.alunos) {
-            if (aluno.mensalidadesPendentes.isNotEmpty) {
-                proximaMensalidade = aluno.mensalidadesPendentes.first;
-                break; 
-            }
-          }
-          
-          return RefreshIndicator(
-            onRefresh: _reloadData,
-            child: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  toolbarHeight: 80,
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  leadingWidth: 80,
-                  leading: Padding(
-                    padding: const EdgeInsets.all(8.0), 
-                    child: Image.asset('assets/images/logo.jpg', fit: BoxFit.contain),
-                  ),
-                  title: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text('Bem-vindo(a),', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w300, color: Colors.white)),
-                      Text(
-                        dashboardData.nomeResponsavel,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [ primaryColor, accentColor ],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false, // SafeArea não precisa de padding inferior com a nav bar fixa
+          child: FutureBuilder<DashboardData>(
+            future: _dashboardDataFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Colors.white));
+              }
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Center(child: Text('Erro ao carregar dados: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
+              }
+              final dashboardData = snapshot.data!;
+              Mensalidade? proximaMensalidade;
+              for (var aluno in dashboardData.alunos) {
+                if (aluno.mensalidadesPendentes.isNotEmpty) {
+                    proximaMensalidade = aluno.mensalidadesPendentes.first;
+                    break; 
+                }
+              }
+
+              return Column(
+                children: [
+                  _buildHeader(dashboardData),
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: backgroundColor,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                  centerTitle: true,
-                  actions: const [
-                    SizedBox(width: 56)
-                  ],
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, primaryColor),
-                      ],
+                      child: RefreshIndicator(
+                        onRefresh: _reloadData,
+                        color: primaryColor,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24.0),
+                          child: _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
   
+  Widget _buildHeader(DashboardData data) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.white.withAlpha(51),
+            backgroundImage: data.fotoPerfilUrl != null ? NetworkImage(data.fotoPerfilUrl!) : null,
+            child: data.fotoPerfilUrl == null ? const Icon(Icons.person, size: 30, color: Colors.white) : null,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Bem-vindo(a),', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Text(
+                  data.nomeResponsavel,
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Map<String, dynamic> _getStatusInfo(String status) {
     switch (status) {
-      case 'PAGA':
-        return {'text': 'PAGO', 'color': Colors.green.shade800, 'bgColor': Colors.green.shade100};
-      case 'ATRASADA':
-        return {'text': 'EM ATRASO', 'color': Colors.red.shade800, 'bgColor': Colors.red.shade100};
-      case 'PENDENTE':
-        return {'text': 'PENDENTE', 'color': Colors.orange.shade800, 'bgColor': Colors.orange.shade100};
-      case 'CANCELADA':
-        return {'text': 'CANCELADA', 'color': Colors.grey.shade700, 'bgColor': Colors.grey.shade300};
-      default:
-        return {'text': status, 'color': Colors.black, 'bgColor': Colors.grey.shade200};
+      case 'PAGA': return {'text': 'PAGO', 'color': Colors.green.shade800, 'bgColor': Colors.green.shade100, 'icon': Icons.check_circle_rounded};
+      case 'ATRASADA': return {'text': 'EM ATRASO', 'color': Colors.red.shade800, 'bgColor': Colors.red.shade100, 'icon': Icons.warning_rounded};
+      case 'PENDENTE': return {'text': 'PENDENTE', 'color': Colors.orange.shade800, 'bgColor': Colors.orange.shade100, 'icon': Icons.schedule_rounded};
+      case 'CANCELADA': return {'text': 'CANCELADA', 'color': Colors.grey.shade700, 'bgColor': Colors.grey.shade300, 'icon': Icons.cancel_rounded};
+      default: return {'text': status, 'color': Colors.black, 'bgColor': Colors.grey.shade200, 'icon': Icons.help_outline_rounded};
     }
   }
 
-  Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf, Color primaryColor) {
+  Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf) {
+    const Color primaryColor = Color(0xFF1E3A8A);
+    const Color accentColor = Color(0xFF8B5CF6);
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+
     if (mensalidade == null) {
-      return Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              const Text(
-                'Tudo em dia! Nenhuma mensalidade pendente.',
-                style: TextStyle(fontSize: 16, color: Colors.green),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf),
-                    ),
-                  );
-                },
-                child: const Text('Ver histórico de faturas'),
-              ),
-            ],
-          ),
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)],
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.verified_user_rounded, size: 64, color: Colors.green),
+            const SizedBox(height: 16),
+            const Text(
+              'Tudo em dia!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Nenhuma mensalidade pendente encontrada.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
+              },
+              child: const Text('Ver histórico de faturas'),
+            ),
+          ],
         ),
       );
     }
 
     final statusInfo = _getStatusInfo(mensalidade.status);
+    final mesFormatado = capitalize(DateFormat('MMMM', 'pt_BR').format(mensalidade.mesReferencia));
 
     return Column(
       children: [
-        Card(
-          elevation: 4,
-          shadowColor: Colors.grey.withAlpha(77),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Mensalidade de ${DateFormat('MMMM', 'pt_BR').format(mensalidade.mesReferencia)}',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusInfo['bgColor'],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        statusInfo['text'],
-                        style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  formatadorMoeda.format(mensalidade.valorFinal),
-                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
-                ),
-                Text(
-                  'Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                if (mensalidade.status == 'ATRASADA') ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16.0),
-                    child: Divider(),
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 20, offset: const Offset(0, 8))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text('Próxima Fatura: $mesFormatado', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor))
                   ),
-                  const Text(
-                    'Detalhamento da Cobrança:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: statusInfo['bgColor'], borderRadius: BorderRadius.circular(12)),
+                    child: Row(
+                      children: [
+                        Icon(statusInfo['icon'], size: 16, color: statusInfo['color']),
+                        const SizedBox(width: 4),
+                        Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal)),
-                  const SizedBox(height: 4),
-                  _buildDetalheRow('Multa por atraso', formatadorMoeda.format(mensalidade.multa)),
-                  const SizedBox(height: 4),
-                  _buildDetalheRow('Juros (${mensalidade.diasAtraso} dias)', formatadorMoeda.format(mensalidade.juros)),
                 ],
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PaymentScreen(
-                            mensalidadeId: mensalidade.id,
-                            valor: mensalidade.valorFinal.toStringAsFixed(2),
-                            mesReferencia: DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
-                          ),
-                        ),
-                      );
-                      _reloadData();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Pagar com Pix', style: TextStyle(fontSize: 16)),
+              ),
+              const SizedBox(height: 16),
+              Text(formatadorMoeda.format(mensalidade.valorFinal), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+              Text('Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey)),
+              if (mensalidade.status == 'ATRASADA') ...[
+                const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Divider()),
+                _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal)),
+                const SizedBox(height: 4),
+                _buildDetalheRow('Multa por atraso', formatadorMoeda.format(mensalidade.multa)),
+                const SizedBox(height: 4),
+                _buildDetalheRow('Juros (${mensalidade.diasAtraso} dias)', formatadorMoeda.format(mensalidade.juros)),
+              ],
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [primaryColor, accentColor]),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: primaryColor.withAlpha(76), blurRadius: 12, offset: const Offset(0, 6))],
+                ),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => PaymentScreen(
+                        mensalidadeId: mensalidade.id,
+                        valor: mensalidade.valorFinal.toStringAsFixed(2),
+                        mesReferencia: DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
+                      ),
+                    ));
+                    _reloadData();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.pix, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Pagar com Pix', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         OutlinedButton.icon(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf),
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
           },
           icon: const Icon(Icons.receipt_long_outlined, size: 20),
           label: const Text('Ver todas as faturas'),
           style: OutlinedButton.styleFrom(
             foregroundColor: primaryColor,
-            side: BorderSide(color: primaryColor.withAlpha(128)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            backgroundColor: Colors.white,
+            side: BorderSide(color: Colors.grey.shade300),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
         ),
@@ -483,3 +471,5 @@ class _DashboardPageState extends State<_DashboardPage> {
     );
   }
 }
+
+String capitalize(String s) => s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : '';
