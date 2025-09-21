@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/main_screen.dart
-// VERSÃO CORRIGIDA: Barra de navegação restaurada ao estilo original.
+// ATUALIZADO: Exibe os detalhes de juros e multa para faturas atrasadas.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
@@ -8,7 +8,7 @@ import 'package:educsa/screens/invoice_history_screen.dart';
 import 'package:educsa/screens/calendar_screen.dart';
 import 'package:intl/intl.dart';
 
-// --- MODELOS DE DADOS (Sem alterações) ---
+// --- MODELOS DE DADOS (ATUALIZADOS) ---
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -16,10 +16,24 @@ class Mensalidade {
   final double valorFinal;
   final String status;
   final DateTime dataVencimento;
+  // CAMPOS ADICIONADOS PARA RECEBER DADOS DO BACKEND
   final double multa;
   final double juros;
   final int diasAtraso;
-  Mensalidade({ required this.id, required this.mesReferencia, required this.valorNominal, required this.valorFinal, required this.status, required this.dataVencimento, required this.multa, required this.juros, required this.diasAtraso });
+
+  Mensalidade({ 
+    required this.id, 
+    required this.mesReferencia, 
+    required this.valorNominal, 
+    required this.valorFinal, 
+    required this.status, 
+    required this.dataVencimento,
+    // CAMPOS ADICIONADOS AO CONSTRUTOR
+    required this.multa,
+    required this.juros,
+    required this.diasAtraso,
+  });
+
   factory Mensalidade.fromJson(Map<String, dynamic> json) {
     return Mensalidade(
       id: json['id'],
@@ -28,12 +42,16 @@ class Mensalidade {
       valorFinal: double.tryParse(json['valor_final'].toString()) ?? 0.0,
       status: json['status'],
       dataVencimento: DateTime.parse(json['data_vencimento']),
+      // PARSE DOS NOVOS CAMPOS VINDOS DA API
       multa: double.tryParse(json['multa'].toString()) ?? 0.0,
       juros: double.tryParse(json['juros'].toString()) ?? 0.0,
       diasAtraso: json['dias_atraso'] ?? 0,
     );
   }
 }
+
+// Modelos Aluno, AlunoComMensalidades e DashboardData não precisam de alteração,
+// pois já usam o modelo Mensalidade, que agora contém os novos campos.
 class Aluno {
   final String nomeCompleto;
   final String serieAno;
@@ -143,7 +161,6 @@ class _MainScreenState extends State<MainScreen> {
         index: _selectedIndex,
         children: _pages,
       ),
-      // --- BARRA DE NAVEGAÇÃO RESTAURADA ---
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -181,7 +198,7 @@ class _MainScreenState extends State<MainScreen> {
           iconSize: 26,
           selectedFontSize: 14,
           unselectedFontSize: 12,
-          showUnselectedLabels: true, // Garante que os nomes sempre apareçam
+          showUnselectedLabels: true,
         ),
       ),
     );
@@ -228,7 +245,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
           ),
         ),
         child: SafeArea(
-          bottom: false, // SafeArea não precisa de padding inferior com a nav bar fixa
+          bottom: false,
           child: FutureBuilder<DashboardData>(
             future: _dashboardDataFuture,
             builder: (context, snapshot) {
@@ -325,6 +342,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
     if (mensalidade == null) {
+      // Card para quando não há faturas pendentes (sem alterações)
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -336,17 +354,9 @@ class _FinancialScreenState extends State<FinancialScreen> {
           children: [
             const Icon(Icons.verified_user_rounded, size: 64, color: Colors.green),
             const SizedBox(height: 16),
-            const Text(
-              'Tudo em dia!',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
-              textAlign: TextAlign.center,
-            ),
+            const Text( 'Tudo em dia!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor), textAlign: TextAlign.center, ),
             const SizedBox(height: 8),
-            const Text(
-              'Nenhuma mensalidade pendente encontrada.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
+            const Text( 'Nenhuma mensalidade pendente encontrada.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16), ),
             const SizedBox(height: 24),
             TextButton(
               onPressed: () {
@@ -397,6 +407,9 @@ class _FinancialScreenState extends State<FinancialScreen> {
               const SizedBox(height: 16),
               Text(formatadorMoeda.format(mensalidade.valorFinal), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
               Text('Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey)),
+              
+              // --- INÍCIO DA ALTERAÇÃO ---
+              // Exibe o detalhamento de juros e multa apenas se a fatura estiver atrasada.
               if (mensalidade.status == 'ATRASADA') ...[
                 const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Divider()),
                 _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal)),
@@ -405,6 +418,8 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 const SizedBox(height: 4),
                 _buildDetalheRow('Juros (${mensalidade.diasAtraso} dias)', formatadorMoeda.format(mensalidade.juros)),
               ],
+              // --- FIM DA ALTERAÇÃO ---
+
               const SizedBox(height: 24),
               Container(
                 width: double.infinity,
@@ -461,6 +476,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
     );
   }
 
+  // Widget auxiliar para criar as linhas de detalhe (sem alterações)
   Widget _buildDetalheRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

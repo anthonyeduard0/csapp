@@ -50,27 +50,93 @@ CONDIÇÕES DE USO
     } else {
       title = "Políticas de Privacidade";
       content = '''
-POLÍTICA DE PRIVACIDADE E SEGURANÇA
+Política de Privacidade do Aplicativo EduCSA
+Última atualização: 02 de setembro de 2025
 
-1.  A Política de Privacidade e Segurança do EduCSA garante segurança e privacidade de identidade aos usuários que forneçam suas informações ao sistema (web e mobile) e site. Dados pessoais cadastrados são protegidos por sistemas avançados de criptografia.
-2.  A plataforma pertencente ao Colégio Santo Antônio adota os níveis legalmente requeridos quanto à segurança na proteção de dados, com respectiva utilização de todos os meios e medidas técnicas para inibição da perda, mau uso, alteração, acesso não autorizado ou subtração indevida dos dados pessoais recolhidos. Não obstante, o usuário deve estar ciente de que as medidas de segurança relativas à Internet não são integralmente infaliveis.
-3.  A presente empresa reserva-se ao direito de modificar a Política para adaptá-la a alterações legislativas ou jurisprudenciais, ou àquelas relativas às práticas comerciais. Em qualquer caso, as mudanças serão anunciadas por meio do seu site ou aplicativo, sendo as mudanças introduzidas com uma antecedência razoável a sua colocação em prática.
-4.  Importante salientar que o site poderá fornecer acesso a links para outros sites externos cujos conteúdos e Políticas de Privacidade, bem como segurança da informação, não são de responsabilidade do Colégio Santo Antônio. Dessa forma, recomenda-se aos usuários que, ao serem redirecionados para sites externos, consultem sempre as respectivas Políticas de Privacidade antes de fornecer seus dados.
-5.  Nas hipóteses em que houver integração da plataforma pertencente ao Colégio Santo Antônio com outros servidores ou plataformas externas, por exemplo nas integrações com Google Calendar ou com Google Drive, os dados e/ou arquivos somente serão compartilhados com o prévio consentimento e a autorização do usuário. Além disso, os dados sensíveis informados para aquelas plataformas externas não serão mantidos pelo EduCSA, ocorrendo a integração apenas de dados ou arquivos previamente autorizados.
-6.  Os usuários poderão exercer os direitos de acesso e de retificação dos seus dados, bem como têm reconhecido o direito de obterem informações através do e-mail [csaagrestina@gmail.com].
+Bem-vindo à Política de Privacidade do aplicativo EduCSA ("Aplicativo"), de propriedade e operado pelo Colégio Santo Antônio, inscrito no CNPJ sob o nº 10.894.861/0001-14 ("Instituição", "nós", "nosso").
 
-COLETA DAS INFORMAÇÕES
+Esta Política de Privacidade descreve como coletamos, usamos, armazenamos, compartilhamos e protegemos suas informações pessoais. Ao usar nosso Aplicativo, você concorda com a coleta e uso de informações de acordo com esta política.
 
-7.  Ao se cadastrar, os usuários determinam voluntariamente que desejam fornecer os seus dados pessoais requeridos.
-8.  Os dados dos usuários também poderão ser coletados por meio da integração de plataformas externas com a plataforma pertencente ao CSApp, por meio da autorização e do consentimento do usuário em compartilhar, por exemplo, seus dados e arquivos constantes nas plataformas Google Drive, Google Calendar, dentre outros. Nesses casos, usaremos suas Credenciais Google (Google Credentials) para sua autenticação e, assim, possibilitar a integração das plataformas.
-9.  Os dados recolhidos serão objeto de tratamento automatizado, sendo incorporados aos correspondentes registros eletrônicos de dados pessoais, dos quais o Colégio Santo Antônio será titular e responsável. As informações obtidas e utilizadas por esta fazem parte dessa Política.
+1. Informações que Coletamos
+Coletamos informações que você nos fornece diretamente para garantir o funcionamento do Aplicativo e a comunicação efetiva entre a comunidade escolar.
 
-UTILIZAÇÃO DAS INFORMAÇÕES
+a) Informações de Cadastro do Responsável:
 
-10. As informações pessoais fornecidas pelos usuários são utilizadas com o propósito básico de identificar o público usuário e seu respectivo perfil, para gestão (business intelligence), administração, atendimento, ampliação e melhorias nos produtos e serviços oferecidos; também para a adequação dos serviços às preferências e anseios dos usuários, para a criação de novos produtos e serviços e para o envio de informações operacionais e comerciais relativas aos produtos e serviços, por meios tradicionais e/ou eletrônicos.
-11. Compromisso do Colégio Santo Antônio:
-    a) corrigir prontamente quaisquer alterações relativas aos dados pessoais do usuário. Para tanto, este sempre deverá informar as mudanças nos respectivos dados;
-    b) possibilitar ao usuário o cancelamento, a qualquer momento, do envio por e-mail de material informativo.
+Dados de Identificação: Nome completo, CPF, endereço de e-mail e número de telefone.
+
+Dados de Acesso: Senha de acesso (armazenada de forma criptografada).
+
+b) Informações dos Alunos:
+
+Dados de Identificação: Nome completo do aluno e sua respectiva série/ano.
+
+Vínculo: As informações do aluno são sempre vinculadas ao seu responsável legal cadastrado.
+
+c) Informações Financeiras:
+
+Dados de Pagamento: Para processar os pagamentos de mensalidades via PIX, coletamos informações do pagador (nome, CPF) e dados da transação, que são gerenciados e processados de forma segura pelo nosso parceiro de pagamentos, o Mercado Pago. Nós não armazenamos dados bancários ou de cartão de crédito em nossos servidores.
+
+d) Informações de Uso e Dispositivo:
+
+Foto de Perfil: Opcionalmente, você pode nos fornecer uma foto de perfil para personalizar sua conta.
+
+Interações: Podemos registrar quando você aceita os Termos de Uso e a data de aceite.
+
+2. Como Usamos Suas Informações
+As informações coletadas são utilizadas para as seguintes finalidades:
+
+Fornecer e Gerenciar Nossos Serviços: Autenticar seu acesso, identificar você e seus alunos vinculados, e exibir as informações financeiras e acadêmicas pertinentes.
+
+Processamento de Pagamentos: Facilitar a geração de cobranças e o processamento de pagamentos das mensalidades.
+
+Comunicação: Enviar notificações sobre o status de mensalidades, eventos do calendário escolar e outras informações operacionais importantes.
+
+Melhoria do Aplicativo: Analisar como os usuários interagem com o aplicativo para identificar problemas, melhorar a experiência de uso e desenvolver novas funcionalidades.
+
+Segurança: Proteger a segurança da sua conta e da nossa plataforma, prevenindo fraudes e atividades não autorizadas.
+
+Suporte ao Usuário: Responder às suas solicitações e solucionar problemas através do nosso e-mail de contato.
+
+3. Compartilhamento de Informações
+Nós não vendemos suas informações pessoais. Suas informações podem ser compartilhadas apenas nas seguintes circunstâncias:
+
+Provedores de Serviço: Compartilhamos informações com empresas que nos auxiliam a operar, como nosso provedor de pagamentos (Mercado Pago) para processar transações. Esses parceiros são obrigados a manter a confidencialidade e segurança dos seus dados.
+
+Obrigações Legais: Poderemos divulgar suas informações se formos obrigados por lei, intimação ou outro processo legal, ou se acreditarmos de boa-fé que a divulgação é necessária para proteger nossos direitos, sua segurança ou a segurança de outros.
+
+4. Armazenamento e Segurança dos Dados
+A segurança dos seus dados é nossa prioridade. Adotamos medidas técnicas e administrativas para proteger suas informações contra perda, roubo, uso indevido, acesso não autorizado, divulgação, alteração e destruição. Todas as senhas são armazenadas utilizando criptografia avançada.
+
+Suas informações são armazenadas em servidores seguros e o acesso a elas é restrito. No entanto, lembre-se que nenhum método de transmissão pela internet ou armazenamento eletrônico é 100% seguro.
+
+5. Seus Direitos como Titular dos Dados
+De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem o direito de:
+
+Acessar seus dados pessoais.
+
+Corrigir dados incompletos, inexatos ou desatualizados.
+
+Solicitar a anonimização, bloqueio ou eliminação de dados desnecessários ou excessivos.
+
+Solicitar a portabilidade dos seus dados a outro fornecedor de serviço.
+
+Obter informações sobre as entidades com as quais compartilhamos seus dados.
+
+Revogar o consentimento a qualquer momento.
+
+Para exercer seus direitos, entre em contato conosco pelo e-mail: csaagrestina@gmail.com.
+
+6. Retenção de Dados
+Manteremos suas informações pessoais armazenadas enquanto você mantiver um vínculo ativo com nossa instituição (por exemplo, enquanto for responsável por um aluno matriculado). Após o término do vínculo, os dados poderão ser armazenados pelo período necessário para cumprir com obrigações legais ou regulatórias.
+
+7. Alterações nesta Política de Privacidade
+Podemos atualizar nossa Política de Privacidade periodicamente. Notificaremos você sobre quaisquer alterações, publicando a nova política nesta página e, se a alteração for significativa, enviaremos uma notificação através do aplicativo. Recomendamos que você revise esta política periodicamente.
+
+8. Contato
+Se você tiver alguma dúvida sobre esta Política de Privacidade ou sobre o tratamento dos seus dados, entre em contato conosco:
+
+Colégio Santo Antônio
+E-mail: csaagrestina@gmail.com
 ''';
     }
 

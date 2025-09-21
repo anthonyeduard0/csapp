@@ -1,5 +1,5 @@
 // lib/screens/calendar_screen.dart
-// VERSÃO FINAL: Polimento visual e funcional avançado.
+// VERSÃO COMPLETA CORRIGIDA: Avisos de 'prefer_const_constructors' resolvidos.
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -84,7 +84,6 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
   }
 
   Future<void> _fetchEvents() async {
-    // Lógica de busca de dados (sem alterações)
     try {
       final response = await http.get(Uri.parse('https://csa-url-app.onrender.com/api/eventos/'));
       if (response.statusCode == 200) {
@@ -127,7 +126,7 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
     if (!isSameDay(_selectedDay, selectedDay)) {
       setState(() {
         _selectedDay = selectedDay;
-        _focusedDay = focusedDay; // --- 3. CORREÇÃO: Garante que o calendário foque no mês selecionado
+        _focusedDay = focusedDay;
         _selectedEvents.value = _getEventsForDay(selectedDay);
       });
     }
@@ -161,7 +160,6 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                       topRight: Radius.circular(30),
                     ),
                   ),
-                  // --- 1 & 6. CORREÇÃO: Adicionado Scrollbar e SingleChildScrollView para evitar overflow ---
                   child: Scrollbar(
                     child: SingleChildScrollView(
                       child: _isLoading
@@ -180,14 +178,14 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
     );
   }
 
-  Widget _buildHeader() { /* ... (sem alterações) ... */ 
+  Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(color: const Color(0x33FFFFFF), borderRadius: BorderRadius.circular(16)),
             child: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 28),
           ),
           const SizedBox(width: 16),
@@ -205,11 +203,11 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
     );
   }
 
-  Widget _buildLoadingState() { /* ... (sem alterações) ... */ 
+  Widget _buildLoadingState() {
     return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)));
   }
 
-  Widget _buildErrorState() { /* ... (sem alterações) ... */ 
+  Widget _buildErrorState() {
     return Center(child: Text(_error!, style: const TextStyle(color: Colors.red)));
   }
 
@@ -224,7 +222,7 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              boxShadow: [ BoxShadow(color: primaryColor.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 8)) ],
+              boxShadow: const [ BoxShadow(color: Color(0x1A1E3A8A), blurRadius: 20, offset: Offset(0, 8)) ],
             ),
             child: TableCalendar<Evento>(
               locale: 'pt_BR',
@@ -241,12 +239,12 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                 titleTextStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
                 leftChevronIcon: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: const Color(0x1A1E3A8A), borderRadius: BorderRadius.circular(12)),
                   child: const Icon(Icons.chevron_left, color: primaryColor),
                 ),
                 rightChevronIcon: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: const Color(0x1A1E3A8A), borderRadius: BorderRadius.circular(12)),
                   child: const Icon(Icons.chevron_right, color: primaryColor),
                 ),
               ),
@@ -255,21 +253,19 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                 weekdayStyle: TextStyle(color: Color(0xFF475569), fontWeight: FontWeight.w600),
                 weekendStyle: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
               ),
-              calendarStyle: CalendarStyle(
+              calendarStyle: const CalendarStyle(
                 outsideDaysVisible: true,
-                outsideTextStyle: const TextStyle(color: Color(0xFFCBD5E1)),
-                weekendTextStyle: const TextStyle(color: Colors.red),
+                outsideTextStyle: TextStyle(color: Color(0xFFCBD5E1)),
+                weekendTextStyle: TextStyle(color: Colors.red),
                 todayDecoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF67E8F9), Color(0xFF22D3EE)]),
+                    gradient: LinearGradient(colors: [Color(0xFF67E8F9), Color(0xFF22D3EE)]),
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: const Color(0xFF22D3EE).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]),
-                // --- 4. CORREÇÃO: GRADIENTE AZUL ESCURO PARA O DIA SELECIONADO ---
+                    boxShadow: [BoxShadow(color: Color(0x4D22D3EE), blurRadius: 8, offset: Offset(0, 4))]),
                 selectedDecoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [primaryColor, accentColor]),
+                    gradient: LinearGradient(colors: [primaryColor, accentColor]),
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 6))]),
-                // --- 5. CORREÇÃO: MARCADOR DE EVENTO VERDE BEBÊ ---
-                markerDecoration: const BoxDecoration(color: Color(0xFFA7F3D0), shape: BoxShape.circle),
+                    boxShadow: [BoxShadow(color: Color(0x661E3A8A), blurRadius: 12, offset: Offset(0, 6))]),
+                markerDecoration: BoxDecoration(color: Color(0xFFA7F3D0), shape: BoxShape.circle),
               ),
             ),
           ),
@@ -278,7 +274,7 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              boxShadow: [ BoxShadow(color: primaryColor.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 8)) ],
+              boxShadow: const [ BoxShadow(color: Color(0x1A1E3A8A), blurRadius: 20, offset: Offset(0, 8)) ],
             ),
             child: Column(
               children: [
@@ -308,8 +304,8 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                   builder: (context, value, _) {
                     if (value.isEmpty) return _buildEmptyEventsState();
                     return ListView.builder(
-                      shrinkWrap: true, // Essencial para ListView dentro de SingleChildScrollView
-                      physics: const NeverScrollableScrollPhysics(), // Desabilita o scroll da lista interna
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       itemCount: value.length,
                       itemBuilder: (context, index) {
@@ -326,7 +322,7 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
     );
   }
 
-  Widget _buildEmptyEventsState() { /* ... (sem alterações) ... */ 
+  Widget _buildEmptyEventsState() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48.0),
       child: Center(
@@ -343,7 +339,6 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
   }
 }
 
-// --- WIDGET PARA O CARD DE EVENTO EXPANSÍVEL ---
 class EventCard extends StatefulWidget {
   final Evento evento;
   const EventCard({super.key, required this.evento});
@@ -385,11 +380,10 @@ class _EventCardState extends State<EventCard> {
           },
           leading: Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              // --- 2. CORREÇÃO: GRADIENTE AZUL ESCURO NOS ÍCONES ---
-              gradient: const LinearGradient(colors: [primaryColor, accentColor]),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [primaryColor, accentColor]),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              boxShadow: [BoxShadow(color: Color(0x4D1E3A8A), blurRadius: 8, offset: Offset(0, 4))],
             ),
             child: const Icon(Icons.event_note_rounded, color: Colors.white, size: 20),
           ),
@@ -417,3 +411,4 @@ class _EventCardState extends State<EventCard> {
     );
   }
 }
+
