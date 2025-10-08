@@ -1,3 +1,14 @@
+// **** INÍCIO DA CORREÇÃO: Imports adicionados ****
+import java.util.Properties
+import java.io.FileInputStream
+// **** FIM DA CORREÇÃO ****
+
+val keyPropertiesFile = rootProject.file("key.properties")
+val keyProperties = Properties()
+if (keyPropertiesFile.exists()) {
+    keyProperties.load(FileInputStream(keyPropertiesFile))
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -7,10 +18,17 @@ plugins {
 
 android {
     namespace = "com.example.csapp"
-    // Definindo um valor fixo para o compileSdk para garantir que o editor o encontre.
-    // O valor 'flutter.compileSdkVersion' às vezes causa problemas de análise no editor.
     compileSdk = 35
     ndkVersion = "27.0.12077973"
+
+    signingConfigs {
+        create("release") {
+            keyAlias = keyProperties["keyAlias"] as String?
+            keyPassword = keyProperties["keyPassword"] as String?
+            storeFile = if (keyProperties["storeFile"] != null) file(keyProperties["storeFile"] as String) else null
+            storePassword = keyProperties["storePassword"] as String?
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -31,9 +49,7 @@ android {
 
     buildTypes {
         release {
-            // TODO: Adicione sua própria configuração de assinatura para a build de release.
-            // Assinando com as chaves de debug por enquanto, para que `flutter run --release` funcione.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
@@ -41,3 +57,4 @@ android {
 flutter {
     source = "../.."
 }
+

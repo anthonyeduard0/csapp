@@ -405,7 +405,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(formatadorMoeda.format(mensalidade.valorFinal), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                          Flexible( // <-- CORREÇÃO APLICADA AQUI
+                            child: Text(formatadorMoeda.format(mensalidade.valorFinal), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor))
+                          ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(color: statusInfo['bgColor'], borderRadius: BorderRadius.circular(12)),
@@ -447,7 +449,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                  Flexible( // <-- CORREÇÃO APLICADA AQUI
+                    child: Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                  ),
                   const SizedBox(height: 4),
                   Text(NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(_totalSelecionado), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
                 ],
