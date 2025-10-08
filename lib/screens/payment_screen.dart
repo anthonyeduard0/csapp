@@ -1,12 +1,12 @@
 // Arquivo: lib/screens/payment_screen.dart
-// VERSÃO CORRIGIDA: Formatação de moeda ajustada para usar vírgula.
+// ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso do pagamento.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart'; // <-- Importação necessária
+import 'package:intl/intl.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String mensalidadeId;
@@ -32,7 +32,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isPaid = false;
   final String _backendUrl = 'https://csa-url-app.onrender.com/api';
 
-  // Cores do tema
   static const Color primaryColor = Color(0xFF1E3A8A);
   static const Color accentColor = Color(0xFF8B5CF6);
   static const Color backgroundColor = Color(0xFFF8FAFC);
@@ -42,6 +41,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.initState();
     if (widget.initialPixData != null) {
       _pixDataFuture = Future.value(widget.initialPixData);
+       _startPollingForPaymentStatus(); // Inicia a verificação para pagamentos em lote também
     } else {
       _pixDataFuture = _gerarPagamentoPixIndividual();
     }
@@ -55,13 +55,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   void _startPollingForPaymentStatus() {
     _pollingTimer?.cancel();
+    // Para pagamentos em lote, não fazemos polling individual
+    if (widget.mensalidadeId.startsWith('lote_')) return;
+    
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _checkPaymentStatus();
     });
   }
 
   Future<void> _checkPaymentStatus() async {
-    if (widget.mensalidadeId.startsWith('lote_')) return;
     try {
       final response = await http.get(
         Uri.parse('$_backendUrl/pagamento/status/${widget.mensalidadeId}/'),
@@ -70,15 +72,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         if (data['status'] == 'PAGA') {
           if (mounted) {
-            setState(() {
-              _isPaid = true;
-            });
+            setState(() { _isPaid = true; });
           }
           _pollingTimer?.cancel();
         }
       }
     } catch (e) {
-      // Silencioso
+      // Erro silencioso
     }
   }
 
@@ -142,7 +142,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            // --- ALTERAÇÃO: Retorna 'true' se o pagamento foi confirmado ---
+            onTap: () => Navigator.pop(context, _isPaid),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Colors.white.withAlpha(51), borderRadius: BorderRadius.circular(16)),
@@ -169,35 +170,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
       future: _pixDataFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)),
-                SizedBox(height: 16),
-                Text('Gerando QR Code...', style: TextStyle(color: Colors.grey, fontSize: 16)),
-              ],
-            ),
-          );
+          return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)), SizedBox(height: 16), Text('Gerando QR Code...', style: TextStyle(color: Colors.grey, fontSize: 16)), ], ), );
         }
         if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Text(
-                'Ocorreu um erro: ${snapshot.error}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red, fontSize: 16),
-              ),
-            ),
-          );
+          return Center( child: Padding( padding: const EdgeInsets.all(24.0), child: Text( 'Ocorreu um erro: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16), ), ), );
         }
         if (snapshot.hasData) {
           final pixData = snapshot.data!;
           final qrCodeBase64 = pixData['qr_code_base64'];
           final qrCodeText = pixData['qr_code'];
-
-          // --- CORREÇÃO DE FORMATAÇÃO APLICADA AQUI ---
           final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
           final valorNumerico = double.tryParse(widget.valor) ?? 0.0;
           final valorFormatado = formatadorMoeda.format(valorNumerico);
@@ -206,23 +187,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                Text(
-                  'Referência: ${widget.mesReferencia}',
-                  style: const TextStyle(fontSize: 16, color: Colors.grey),
-                ),
+                Text( 'Referência: ${widget.mesReferencia}', style: const TextStyle(fontSize: 16, color: Colors.grey), ),
                 const SizedBox(height: 8),
-                Text(
-                  valorFormatado, // Usando o valor formatado
-                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryColor),
-                ),
+                Text( valorFormatado, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryColor), ),
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)],
-                  ),
+                  decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], ),
                   child: Image.memory(base64Decode(qrCodeBase64), width: 220, height: 220),
                 ),
                 const SizedBox(height: 24),
@@ -230,15 +201,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    qrCodeText,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
+                  decoration: BoxDecoration( color: Colors.grey[200], borderRadius: BorderRadius.circular(12), ),
+                  child: Text( qrCodeText, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Colors.black54), ),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
@@ -246,21 +210,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   label: const Text('Copiar Código'),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: qrCodeText));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Código Pix copiado!'),
-                        backgroundColor: primaryColor,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar( SnackBar( content: const Text('Código Pix copiado!'), backgroundColor: primaryColor, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), ), );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
+                  style: ElevatedButton.styleFrom( backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), ),
                 ),
               ],
             ),
@@ -279,34 +231,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Colors.green.shade400, Colors.green.shade600]),
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration( gradient: LinearGradient(colors: [Colors.green.shade400, Colors.green.shade600]), shape: BoxShape.circle, ),
             child: const Icon(Icons.check_rounded, color: Colors.white, size: 80),
           ),
           const SizedBox(height: 32),
-          const Text(
-            'Pagamento Confirmado!',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor),
-            textAlign: TextAlign.center,
-          ),
+          const Text( 'Pagamento Confirmado!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor), textAlign: TextAlign.center, ),
           const SizedBox(height: 16),
-          const Text(
-            'Obrigado! Seu pagamento foi processado com sucesso e a fatura foi atualizada.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 16),
-          ),
+          const Text( 'Obrigado! Seu pagamento foi processado com sucesso.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16), ),
           const SizedBox(height: 48),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            child: const Text('Voltar para Faturas'),
+            // --- ALTERAÇÃO: Retorna 'true' ao pressionar o botão de voltar ---
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom( backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), ),
+            child: const Text('Voltar para o Início'),
           )
         ],
       ),

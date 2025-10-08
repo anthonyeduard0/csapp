@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/invoice_history_screen.dart
-// VERSÃO COMPLETA CORRIGIDA: Avisos resolvidos e código reintegrado com o projeto.
+// ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso de um pagamento em lote.
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -20,12 +20,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   final Set<String> _selectedInvoiceIds = {};
   double _totalSelecionado = 0.0;
   List<Mensalidade> _allInvoices = [];
+  bool _didPay = false; // --- NOVA VARIÁVEL DE ESTADO ---
   
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late TabController _tabController;
 
-  // Cores do tema
   static const Color primaryColor = Color(0xFF1E3A8A);
   static const Color accentColor = Color(0xFF8B5CF6);
   static const Color backgroundColor = Color(0xFFF8FAFC);
@@ -118,7 +118,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
       );
       if (response.statusCode == 201) {
         final pixData = jsonDecode(utf8.decode(response.bodyBytes));
-        await navigator.push(MaterialPageRoute(
+        final result = await navigator.push(MaterialPageRoute(
           builder: (context) => PaymentScreen(
             mensalidadeId: 'lote_${DateTime.now().millisecondsSinceEpoch}',
             valor: _totalSelecionado.toStringAsFixed(2),
@@ -126,7 +126,11 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
             initialPixData: pixData,
           ),
         ));
-        _refreshData();
+        // --- ALTERAÇÃO: Se o pagamento foi feito, marca para recarregar ---
+        if (result == true) {
+          _didPay = true; // Marca que um pagamento foi feito
+          _refreshData();
+        }
       } else {
         final error = jsonDecode(response.body)['error'];
         scaffoldMessenger.showSnackBar(SnackBar(content: Text('Erro: $error'), backgroundColor: Colors.red));
@@ -202,7 +206,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            // --- ALTERAÇÃO: Retorna a variável _didPay ao sair ---
+            onTap: () => Navigator.pop(context, _didPay),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: const Color(0x33FFFFFF), borderRadius: BorderRadius.circular(16)),
@@ -251,47 +256,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor), strokeWidth: 3),
-          SizedBox(height: 16),
-          Text('Carregando faturas...', style: TextStyle(color: Colors.grey, fontSize: 16)),
-        ],
-      ),
-    );
+    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor), strokeWidth: 3), SizedBox(height: 16), Text('Carregando faturas...', style: TextStyle(color: Colors.grey, fontSize: 16)), ], ), );
   }
 
   Widget _buildErrorState(String error) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.shade200)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 48),
-            const SizedBox(height: 16),
-            Text('Erro: $error', textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700, fontSize: 16)),
-          ],
-        ),
-      ),
-    );
+    return Center( child: Container( margin: const EdgeInsets.all(24), padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.shade200)), child: Column( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 48), const SizedBox(height: 16), Text('Erro: $error', textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700, fontSize: 16)), ], ), ), );
   }
   
   Widget _buildEmptyState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text('Nenhuma fatura encontrada', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
-        ],
-      ),
-    );
+    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey), SizedBox(height: 16), Text('Nenhuma fatura encontrada', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)), ], ), );
   }
 
   Map<String, dynamic> _getStatusInfo(String status) {
@@ -405,7 +378,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Flexible( // <-- CORREÇÃO APLICADA AQUI
+                          Flexible(
                             child: Text(formatadorMoeda.format(mensalidade.valorFinal), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor))
                           ),
                           Container(
@@ -449,7 +422,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Flexible( // <-- CORREÇÃO APLICADA AQUI
+                  Flexible(
                     child: Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
                   ),
                   const SizedBox(height: 4),
@@ -490,4 +463,3 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
 }
 
 String capitalize(String s) => s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : '';
-

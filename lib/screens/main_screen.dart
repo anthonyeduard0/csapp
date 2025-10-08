@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/main_screen.dart
-// ATUALIZADO: Exibe os detalhes de juros e multa para faturas atrasadas.
+// ATUALIZADO: Adiciona lógica para recarregar dados financeiros ao voltar de outra tela.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
@@ -7,8 +7,12 @@ import 'package:educsa/screens/payment_screen.dart';
 import 'package:educsa/screens/invoice_history_screen.dart';
 import 'package:educsa/screens/calendar_screen.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-// --- MODELOS DE DADOS (ATUALIZADOS) ---
+
+// --- MODELOS DE DADOS (Sem alterações) ---
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -16,7 +20,6 @@ class Mensalidade {
   final double valorFinal;
   final String status;
   final DateTime dataVencimento;
-  // CAMPOS ADICIONADOS PARA RECEBER DADOS DO BACKEND
   final double multa;
   final double juros;
   final int diasAtraso;
@@ -28,7 +31,6 @@ class Mensalidade {
     required this.valorFinal, 
     required this.status, 
     required this.dataVencimento,
-    // CAMPOS ADICIONADOS AO CONSTRUTOR
     required this.multa,
     required this.juros,
     required this.diasAtraso,
@@ -42,7 +44,6 @@ class Mensalidade {
       valorFinal: double.tryParse(json['valor_final'].toString()) ?? 0.0,
       status: json['status'],
       dataVencimento: DateTime.parse(json['data_vencimento']),
-      // PARSE DOS NOVOS CAMPOS VINDOS DA API
       multa: double.tryParse(json['multa'].toString()) ?? 0.0,
       juros: double.tryParse(json['juros'].toString()) ?? 0.0,
       diasAtraso: json['dias_atraso'] ?? 0,
@@ -50,8 +51,6 @@ class Mensalidade {
   }
 }
 
-// Modelos Aluno, AlunoComMensalidades e DashboardData não precisam de alteração,
-// pois já usam o modelo Mensalidade, que agora contém os novos campos.
 class Aluno {
   final String nomeCompleto;
   final String serieAno;
@@ -71,6 +70,7 @@ class Aluno {
     );
   }
 }
+
 class AlunoComMensalidades {
   final String nomeCompleto;
   final List<Mensalidade> mensalidades;
@@ -85,6 +85,7 @@ class AlunoComMensalidades {
     );
   }
 }
+
 class DashboardData {
   final String nomeResponsavel;
   final String cpfResponsavel;
@@ -124,7 +125,7 @@ class DashboardData {
   }
 }
 
-// --- TELA PRINCIPAL COM BARRA DE NAVEGAÇÃO ---
+// --- TELA PRINCIPAL (MainScreen) ---
 class MainScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
   const MainScreen({super.key, required this.responseData});
@@ -135,16 +136,24 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  late final List<Widget> _pages;
+  late List<Widget> _pages;
+  // --- CHAVE GLOBAL PARA ACESSAR O ESTADO DA TELA FINANCEIRA ---
+  final GlobalKey<_FinancialScreenState> _financialScreenKey = GlobalKey<_FinancialScreenState>();
 
   @override
   void initState() {
     super.initState();
     _pages = [
-      FinancialScreen(responseData: widget.responseData),
+      // --- PASSA A CHAVE PARA A FINANCIALSCREEN ---
+      FinancialScreen(key: _financialScreenKey, responseData: widget.responseData),
       const CalendarScreen(),
       ProfileScreen(responseData: widget.responseData),
     ];
+  }
+
+  // --- FUNÇÃO PARA ATUALIZAR DADOS NA TELA FINANCEIRA ---
+  void _refreshFinancialData() {
+    _financialScreenKey.currentState?.reloadData();
   }
 
   void _onItemTapped(int index) {
@@ -163,31 +172,13 @@ class _MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(26),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
+          boxShadow: [ BoxShadow( color: Colors.black.withAlpha(26), blurRadius: 8, offset: const Offset(0, -2), ), ],
         ),
         child: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.monetization_on_outlined),
-              activeIcon: Icon(Icons.monetization_on),
-              label: 'Financeiro',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              activeIcon: Icon(Icons.calendar_today),
-              label: 'Calendário',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Perfil',
-            ),
+            BottomNavigationBarItem( icon: Icon(Icons.monetization_on_outlined), activeIcon: Icon(Icons.monetization_on), label: 'Financeiro', ),
+            BottomNavigationBarItem( icon: Icon(Icons.calendar_today_outlined), activeIcon: Icon(Icons.calendar_today), label: 'Calendário', ),
+            BottomNavigationBarItem( icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Perfil', ),
           ],
           currentIndex: _selectedIndex,
           selectedItemColor: primaryColor,
@@ -206,9 +197,10 @@ class _MainScreenState extends State<MainScreen> {
 }
 
 
-// --- WIDGET DA PÁGINA FINANCEIRO (ANTIGO DASHBOARD) ---
+// --- WIDGET DA PÁGINA FINANCEIRO (FinancialScreen) ---
 class FinancialScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
+  // --- RECEBE A CHAVE NO CONSTRUTOR ---
   const FinancialScreen({required this.responseData, super.key});
   @override
   State<FinancialScreen> createState() => _FinancialScreenState();
@@ -223,11 +215,32 @@ class _FinancialScreenState extends State<FinancialScreen> {
     _dashboardDataFuture = Future.value(DashboardData.fromJson(widget.responseData));
   }
 
-  Future<void> _reloadData() async {
-    setState(() {
-      _dashboardDataFuture = Future.value(DashboardData.fromJson(widget.responseData));
-    });
+  // --- MÉTODO PARA RECARREGAR DADOS DO SERVIDOR ---
+  Future<void> reloadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cpf = prefs.getString('user_cpf');
+    final password = prefs.getString('user_password');
+
+    if (cpf == null || password == null) return;
+    
+    final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: jsonEncode({'cpf': cpf, 'password': password}),
+      );
+      if (mounted && response.statusCode == 200) {
+        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          _dashboardDataFuture = Future.value(DashboardData.fromJson(responseData));
+        });
+      }
+    } catch (e) {
+      // Trata o erro silenciosamente para não quebrar a UI
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -278,9 +291,10 @@ class _FinancialScreenState extends State<FinancialScreen> {
                         ),
                       ),
                       child: RefreshIndicator(
-                        onRefresh: _reloadData,
+                        onRefresh: reloadData,
                         color: primaryColor,
                         child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(24.0),
                           child: _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel),
                         ),
@@ -342,14 +356,9 @@ class _FinancialScreenState extends State<FinancialScreen> {
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
     if (mensalidade == null) {
-      // Card para quando não há faturas pendentes (sem alterações)
       return Container(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)],
-        ),
+        decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], ),
         child: Column(
           children: [
             const Icon(Icons.verified_user_rounded, size: 64, color: Colors.green),
@@ -359,8 +368,11 @@ class _FinancialScreenState extends State<FinancialScreen> {
             const Text( 'Nenhuma mensalidade pendente encontrada.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16), ),
             const SizedBox(height: 24),
             TextButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
+              onPressed: () async {
+                final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
+                if (result == true) {
+                  reloadData();
+                }
               },
               child: const Text('Ver histórico de faturas'),
             ),
@@ -376,20 +388,14 @@ class _FinancialScreenState extends State<FinancialScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 20, offset: const Offset(0, 8))],
-          ),
+          decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 20, offset: const Offset(0, 8))], ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text('Próxima Fatura: $mesFormatado', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor))
-                  ),
+                  Expanded( child: Text('Próxima Fatura: $mesFormatado', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)) ),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -407,9 +413,6 @@ class _FinancialScreenState extends State<FinancialScreen> {
               const SizedBox(height: 16),
               Text(formatadorMoeda.format(mensalidade.valorFinal), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
               Text('Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey)),
-              
-              // --- INÍCIO DA ALTERAÇÃO ---
-              // Exibe o detalhamento de juros e multa apenas se a fatura estiver atrasada.
               if (mensalidade.status == 'ATRASADA') ...[
                 const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Divider()),
                 _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal)),
@@ -418,32 +421,26 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 const SizedBox(height: 4),
                 _buildDetalheRow('Juros (${mensalidade.diasAtraso} dias)', formatadorMoeda.format(mensalidade.juros)),
               ],
-              // --- FIM DA ALTERAÇÃO ---
-
               const SizedBox(height: 24),
               Container(
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [primaryColor, accentColor]),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [BoxShadow(color: primaryColor.withAlpha(76), blurRadius: 12, offset: const Offset(0, 6))],
-                ),
+                decoration: BoxDecoration( gradient: const LinearGradient(colors: [primaryColor, accentColor]), borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: primaryColor.withAlpha(76), blurRadius: 12, offset: const Offset(0, 6))], ),
                 child: ElevatedButton(
                   onPressed: () async {
-                    await Navigator.push(context, MaterialPageRoute(
+                    // --- ALTERAÇÃO: Aguarda o resultado da tela de pagamento ---
+                    final result = await Navigator.push(context, MaterialPageRoute(
                       builder: (context) => PaymentScreen(
                         mensalidadeId: mensalidade.id,
                         valor: mensalidade.valorFinal.toStringAsFixed(2),
                         mesReferencia: DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
                       ),
                     ));
-                    _reloadData();
+                    // --- Se o resultado for 'true', recarrega os dados ---
+                    if (result == true) {
+                      reloadData();
+                    }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
+                  style: ElevatedButton.styleFrom( backgroundColor: Colors.transparent, shadowColor: Colors.transparent, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -459,24 +456,22 @@ class _FinancialScreenState extends State<FinancialScreen> {
         ),
         const SizedBox(height: 24),
         OutlinedButton.icon(
-          onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
+          onPressed: () async {
+            // --- ALTERAÇÃO: Aguarda o resultado da tela de histórico ---
+            final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
+             // --- Se o resultado for 'true', recarrega os dados ---
+            if (result == true) {
+              reloadData();
+            }
           },
           icon: const Icon(Icons.receipt_long_outlined, size: 20),
           label: const Text('Ver todas as faturas'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: primaryColor,
-            backgroundColor: Colors.white,
-            side: BorderSide(color: Colors.grey.shade300),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
+          style: OutlinedButton.styleFrom( foregroundColor: primaryColor, backgroundColor: Colors.white, side: BorderSide(color: Colors.grey.shade300), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), ),
         ),
       ],
     );
   }
 
-  // Widget auxiliar para criar as linhas de detalhe (sem alterações)
   Widget _buildDetalheRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

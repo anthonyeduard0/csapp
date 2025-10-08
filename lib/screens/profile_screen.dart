@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/profile_screen.dart
-// VERSÃO CORRIGIDA: Removidos avisos de código e otimizações aplicadas.
+// ATUALIZADO: Corrigido o problema de overflow de pixels.
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:educsa/screens/main_screen.dart'; 
 import 'package:educsa/screens/login_screen.dart';
 import 'package:educsa/screens/settings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
@@ -20,10 +21,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late DashboardData _dashboardData;
-  // File? _imageFile; // Variável não utilizada removida
   bool _isUploading = false;
 
-  // Cores do tema
   static const Color primaryColor = Color(0xFF1E3A8A);
   static const Color accentColor = Color(0xFF8B5CF6);
   static const Color backgroundColor = Color(0xFFF8FAFC);
@@ -35,12 +34,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _reloadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cpf = prefs.getString('user_cpf');
+    final password = prefs.getString('user_password');
+    if (cpf == null || password == null) return;
+    
     final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode({'cpf': _dashboardData.cpfResponsavel, 'password': 'dummy_password_for_refresh'}),
+        body: jsonEncode({'cpf': cpf, 'password': password}),
       );
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
@@ -51,7 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
-      // Silencioso
+      // Erro silencioso
     }
   }
 
@@ -118,13 +122,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onRefresh: _reloadData,
                     color: primaryColor,
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 100.0), // Padding para a barra de navegação
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 100.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text("Alunos Vinculados", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
                           const SizedBox(height: 16),
-                          // --- CORREÇÃO: Removido .toList() desnecessário ---
                           ..._dashboardData.alunos.map((aluno) => _buildAlunoCard(aluno)),
                           const SizedBox(height: 24),
                           const Text("Opções", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
@@ -142,11 +146,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             title: 'Sair do Aplicativo',
                             subtitle: 'Encerrar sua sessão atual',
                             color: Colors.red.shade700,
-                            onTap: () {
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                                (Route<dynamic> route) => false,
-                              );
+                            onTap: () async {
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.remove('user_cpf');
+                              await prefs.remove('user_password');
+                              if(mounted) {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                  (Route<dynamic> route) => false,
+                                );
+                              }
                             }
                           ),
                           const SizedBox(height: 24),
@@ -176,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundColor: Colors.white.withAlpha(51), // Correção: withOpacity -> withAlpha
+                  backgroundColor: Colors.white.withAlpha(51),
                   backgroundImage: _dashboardData.fotoPerfilUrl != null ? NetworkImage(_dashboardData.fotoPerfilUrl!) : null,
                   child: _isUploading
                       ? const CircularProgressIndicator(color: Colors.white)
@@ -212,7 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], // Correção: withOpacity -> withAlpha
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,10 +245,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(width: 12),
         Text(label, style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
         const Spacer(),
-        Text(
-          value,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? Colors.black87),
+        // --- INÍCIO DA CORREÇÃO DE OVERFLOW ---
+        // O widget Flexible permite que o texto quebre a linha se for muito grande.
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end, // Alinha o texto à direita
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? Colors.black87),
+          ),
         ),
+        // --- FIM DA CORREÇÃO ---
       ],
     );
   }
@@ -250,7 +265,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], // Correção: withOpacity -> withAlpha
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)],
       ),
       child: Material(
         color: Colors.transparent,
@@ -281,3 +296,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
