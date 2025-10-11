@@ -104,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Image.asset( 'assets/images/csalogo.png', height: 120, ),
+                Image.asset( 'assets/images/newlogo.png', height: 120, ),
                 const SizedBox(height: 20),
                 const Text( 'Seja bem-vindo(a)!', style: TextStyle( color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, ), ),
                 const SizedBox(height: 10),

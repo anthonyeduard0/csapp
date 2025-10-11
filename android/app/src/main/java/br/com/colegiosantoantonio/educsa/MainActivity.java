@@ -1,4 +1,4 @@
-package com.example.csapp;
+package br.com.colegiosantoantonio.educsa;
 
 import io.flutter.embedding.android.FlutterActivity;
 
