@@ -1,5 +1,5 @@
 // Arquivo: lib/screens/terms_acceptance_screen.dart
-// VERSÃO COM AJUSTE DE RESPONSIVIDADE (SCROLL)
+// ATUALIZADO: Revertido para o fundo branco e melhorado o estilo.
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -199,8 +199,6 @@ UTILIZAÇÃO DAS INFORMAÇÕES
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      // --- MUDANÇA PARA RESPONSIVIDADE ---
-      // Adicionamos um LayoutBuilder e um SingleChildScrollView
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
@@ -317,3 +315,4 @@ class _TermsAcceptancePage extends StatefulWidget {
   @override
   State<_TermsAcceptancePage> createState() => _TermsAcceptancePageState();
 }
+

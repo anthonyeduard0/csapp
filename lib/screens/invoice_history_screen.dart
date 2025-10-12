@@ -1,5 +1,6 @@
 // Arquivo: lib/screens/invoice_history_screen.dart
 // ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso de um pagamento em lote.
+// ATUALIZADO: Gradiente de cores alterado para consistência visual.
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -26,8 +27,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   late Animation<double> _fadeAnimation;
   late TabController _tabController;
 
-  static const Color primaryColor = Color(0xFF1E3A8A);
-  static const Color accentColor = Color(0xFF8B5CF6);
+  static const Color primaryColor = Color(0xFF1D449B);
+  static const Color accentColor = Color(0xFF25B6E8);
   static const Color backgroundColor = Color(0xFFF8FAFC);
 
   @override
@@ -148,8 +149,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [ Color(0xFF1E3A8A), Color(0xFF3B82F6), Color(0xFF8B5CF6) ],
-            stops: [0.0, 0.6, 1.0],
+            colors: [primaryColor, accentColor],
           ),
         ),
         child: SafeArea(

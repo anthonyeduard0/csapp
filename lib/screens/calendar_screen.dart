@@ -1,5 +1,6 @@
 // lib/screens/calendar_screen.dart
 // VERSÃO COMPLETA CORRIGIDA: Avisos de 'prefer_const_constructors' resolvidos.
+// ATUALIZADO: Gradiente de cores alterado para consistência visual.
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -55,8 +56,8 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
   String? _error;
 
   // Cores do tema
-  static const Color primaryColor = Color(0xFF1E3A8A);
-  static const Color accentColor = Color(0xFF8B5CF6);
+  static const Color primaryColor = Color(0xFF1D449B);
+  static const Color accentColor = Color(0xFF25B6E8);
   static const Color backgroundColor = Color(0xFFF8FAFC);
 
   @override
@@ -142,8 +143,7 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [ Color(0xFF1E3A8A), Color(0xFF3B82F6), Color(0xFF8B5CF6) ],
-            stops: [0.0, 0.6, 1.0],
+            colors: [primaryColor, accentColor],
           ),
         ),
         child: SafeArea(
@@ -352,8 +352,8 @@ class _EventCardState extends State<EventCard> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF1E3A8A);
-    const Color accentColor = Color(0xFF8B5CF6);
+    const Color primaryColor = Color(0xFF1D449B);
+    const Color accentColor = Color(0xFF25B6E8);
     
     final formatadorHora = DateFormat('HH:mm');
     String horario;
@@ -411,4 +411,3 @@ class _EventCardState extends State<EventCard> {
     );
   }
 }
-

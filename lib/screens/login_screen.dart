@@ -1,5 +1,6 @@
 // Arquivo: lib/screens/login_screen.dart
 // ATUALIZADO: Salva CPF e senha para recarregamento automático de dados.
+// ATUALIZADO: Gradiente de cores alterado conforme solicitado.
 
 import 'package:educsa/screens/terms_acceptance_screen.dart';
 import 'package:flutter/gestures.dart';
@@ -93,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF1E3A8A), Color(0xFF8B5CF6)],
+            colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

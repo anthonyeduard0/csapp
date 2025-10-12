@@ -1,5 +1,6 @@
 // Arquivo: lib/screens/settings_screen.dart
 // VERSÃO FINAL: Redesenhada com novo estilo e lógica atualizada.
+// ATUALIZADO: Gradiente de cores alterado para consistência visual.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/legal_screen.dart'; // Importa a tela de documentos legais
@@ -8,8 +9,8 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   // Cores do tema
-  static const Color primaryColor = Color(0xFF1E3A8A);
-  static const Color accentColor = Color(0xFF8B5CF6);
+  static const Color primaryColor = Color(0xFF1D449B);
+  static const Color accentColor = Color(0xFF25B6E8);
   static const Color backgroundColor = Color(0xFFF8FAFC);
 
   // Método para navegar para a tela de documentos legais

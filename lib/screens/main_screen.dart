@@ -1,5 +1,6 @@
 // Arquivo: lib/screens/main_screen.dart
 // ATUALIZADO: Adiciona lógica para recarregar dados financeiros ao voltar de outra tela.
+// ATUALIZADO: Gradiente de cores alterado para consistência visual.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
@@ -24,12 +25,12 @@ class Mensalidade {
   final double juros;
   final int diasAtraso;
 
-  Mensalidade({ 
-    required this.id, 
-    required this.mesReferencia, 
-    required this.valorNominal, 
-    required this.valorFinal, 
-    required this.status, 
+  Mensalidade({
+    required this.id,
+    required this.mesReferencia,
+    required this.valorNominal,
+    required this.valorFinal,
+    required this.status,
     required this.dataVencimento,
     required this.multa,
     required this.juros,
@@ -245,7 +246,6 @@ class _FinancialScreenState extends State<FinancialScreen> {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF1E3A8A);
-    const Color accentColor = Color(0xFF8B5CF6);
     const Color backgroundColor = Color(0xFFF8FAFC);
 
     return Scaffold(
@@ -254,7 +254,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [ primaryColor, accentColor ],
+            colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
           ),
         ),
         child: SafeArea(
@@ -351,8 +351,8 @@ class _FinancialScreenState extends State<FinancialScreen> {
   }
 
   Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf) {
-    const Color primaryColor = Color(0xFF1E3A8A);
-    const Color accentColor = Color(0xFF8B5CF6);
+    const Color primaryColor = Color(0xFF1D449B); // Cor atualizada
+    const Color accentColor = Color(0xFF25B6E8); // Cor atualizada
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
     if (mensalidade == null) {

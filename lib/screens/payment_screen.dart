@@ -1,5 +1,6 @@
 // Arquivo: lib/screens/payment_screen.dart
 // ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso do pagamento.
+// ATUALIZADO: Gradiente de cores alterado para consistência visual.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -32,8 +33,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isPaid = false;
   final String _backendUrl = 'https://csa-url-app.onrender.com/api';
 
-  static const Color primaryColor = Color(0xFF1E3A8A);
-  static const Color accentColor = Color(0xFF8B5CF6);
+  static const Color primaryColor = Color(0xFF1D449B);
+  static const Color accentColor = Color(0xFF25B6E8);
   static const Color backgroundColor = Color(0xFFF8FAFC);
 
   @override

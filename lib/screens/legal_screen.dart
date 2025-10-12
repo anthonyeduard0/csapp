@@ -1,4 +1,5 @@
-// Arquivo: lib/screens/legal_screen.dart (NOVO)
+// Arquivo: lib/screens/legal_screen.dart
+// ATUALIZADO: Melhorias visuais e cor do título alterada para preto.
 
 import 'package:flutter/material.dart';
 
@@ -7,25 +8,47 @@ class LegalScreen extends StatelessWidget {
   final String content;
 
   const LegalScreen({
-    super.key, 
-    required this.title, 
+    super.key,
+    required this.title,
     required this.content,
   });
 
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF1E3A8A);
+    const Color backgroundColor = Color(0xFFF8FAFC);
+    const Color textColor = Color(0xFF334155);
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black, // <-- Cor do título alterada para preto
+        elevation: 1,
+        shadowColor: Colors.grey.withOpacity(0.2),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black), // <-- Cor do ícone alterada para preto
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleTextStyle: const TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Text(content),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+        child: Text(
+          content,
+          style: const TextStyle(
+            fontSize: 16,
+            color: textColor,
+            height: 1.6, // Espaçamento entre linhas para melhor legibilidade
+          ),
+        ),
       ),
     );
   }
 }
+

@@ -1,5 +1,6 @@
 // Arquivo: lib/screens/profile_screen.dart
 // ATUALIZADO: Corrigido o problema de overflow de pixels.
+// ATUALIZADO: Gradiente de cores alterado para consistência visual.
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -23,8 +24,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late DashboardData _dashboardData;
   bool _isUploading = false;
 
-  static const Color primaryColor = Color(0xFF1E3A8A);
-  static const Color accentColor = Color(0xFF8B5CF6);
+  static const Color primaryColor = Color(0xFF1D449B);
+  static const Color accentColor = Color(0xFF25B6E8);
   static const Color backgroundColor = Color(0xFFF8FAFC);
 
   @override
@@ -296,4 +297,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-
