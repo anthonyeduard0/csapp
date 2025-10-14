@@ -1,16 +1,13 @@
 // Arquivo: lib/screens/profile_screen.dart
-// ATUALIZADO: Corrigido o problema de overflow de pixels.
-// ATUALIZADO: Gradiente de cores alterado para consistência visual.
+// VERSÃO LIMPA E CORRIGIDA: Removida toda a lógica de upload e exibição da foto de perfil.
 
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:educsa/screens/main_screen.dart'; 
 import 'package:educsa/screens/login_screen.dart';
 import 'package:educsa/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
@@ -22,7 +19,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late DashboardData _dashboardData;
-  bool _isUploading = false;
 
   static const Color primaryColor = Color(0xFF1D449B);
   static const Color accentColor = Color(0xFF25B6E8);
@@ -33,7 +29,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _dashboardData = DashboardData.fromJson(widget.responseData);
   }
-
+  
+  // Função para recarregar os dados do servidor
   Future<void> _reloadData() async {
     final prefs = await SharedPreferences.getInstance();
     final cpf = prefs.getString('user_cpf');
@@ -57,40 +54,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       // Erro silencioso
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (pickedFile != null) {
-      _uploadImage(File(pickedFile.path));
-    }
-  }
-
-  Future<void> _uploadImage(File imageFile) async {
-    setState(() { _isUploading = true; });
-    final uri = Uri.parse('https://csa-url-app.onrender.com/api/responsavel/upload-foto/');
-    var request = http.MultipartRequest('POST', uri)
-      ..fields['cpf'] = _dashboardData.cpfResponsavel
-      ..files.add(await http.MultipartFile.fromPath('foto_perfil', imageFile.path));
-    try {
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      if (!mounted) return;
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _dashboardData = _dashboardData.copyWith(fotoPerfilUrl: data['foto_perfil_url']);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto atualizada!'), backgroundColor: Colors.green));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${response.body}'), backgroundColor: Colors.red));
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro de conexão: $e'), backgroundColor: Colors.red));
-    } finally {
-      if (mounted) { setState(() { _isUploading = false; }); }
     }
   }
 
@@ -179,32 +142,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Column(
         children: [
-          GestureDetector(
-            onTap: _pickImage,
-            child: Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white.withAlpha(51),
-                  backgroundImage: _dashboardData.fotoPerfilUrl != null ? NetworkImage(_dashboardData.fotoPerfilUrl!) : null,
-                  child: _isUploading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : (_dashboardData.fotoPerfilUrl == null
-                          ? const Icon(Icons.person, size: 50, color: Colors.white)
-                          : null),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: primaryColor, width: 2)
-                  ),
-                  child: const Icon(Icons.camera_alt_rounded, size: 18, color: primaryColor),
-                ),
-              ],
-            ),
+          // Widget da foto de perfil foi removido daqui.
+          // Um ícone simples é exibido em seu lugar.
+          CircleAvatar(
+            radius: 50,
+            backgroundColor: Colors.white.withAlpha(51),
+            child: const Icon(Icons.person, size: 50, color: Colors.white),
           ),
           const SizedBox(height: 12),
           Text(_dashboardData.nomeResponsavel, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
@@ -246,16 +189,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(width: 12),
         Text(label, style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
         const Spacer(),
-        // --- INÍCIO DA CORREÇÃO DE OVERFLOW ---
-        // O widget Flexible permite que o texto quebre a linha se for muito grande.
         Flexible(
           child: Text(
             value,
-            textAlign: TextAlign.end, // Alinha o texto à direita
+            textAlign: TextAlign.end,
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? Colors.black87),
           ),
         ),
-        // --- FIM DA CORREÇÃO ---
       ],
     );
   }
@@ -297,3 +237,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+

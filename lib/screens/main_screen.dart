@@ -1,6 +1,5 @@
 // Arquivo: lib/screens/main_screen.dart
-// ATUALIZADO: Adiciona lógica para recarregar dados financeiros ao voltar de outra tela.
-// ATUALIZADO: Gradiente de cores alterado para consistência visual.
+// VERSÃO LIMPA: Removida a lógica de exibição da foto de perfil.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
@@ -12,8 +11,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-// --- MODELOS DE DADOS (Sem alterações) ---
 class Mensalidade {
   final String id;
   final DateTime mesReferencia;
@@ -92,9 +89,18 @@ class DashboardData {
   final String cpfResponsavel;
   final String email;
   final String? telefone;
-  final String? fotoPerfilUrl;
+  // O campo fotoPerfilUrl foi removido daqui
   final List<Aluno> alunos;
-  DashboardData({ required this.nomeResponsavel, required this.cpfResponsavel, required this.email, this.telefone, this.fotoPerfilUrl, required this.alunos });
+  
+  DashboardData({ 
+    required this.nomeResponsavel, 
+    required this.cpfResponsavel, 
+    required this.email, 
+    this.telefone, 
+    // fotoPerfilUrl removido do construtor
+    required this.alunos 
+  });
+
   factory DashboardData.fromJson(Map<String, dynamic> json) {
     var alunosList = json['alunos'] as List;
     List<Aluno> alunos = alunosList.map((i) => Aluno.fromJson(i)).toList();
@@ -103,16 +109,17 @@ class DashboardData {
       cpfResponsavel: json['cpf'],
       email: json['email'],
       telefone: json['telefone'],
-      fotoPerfilUrl: json['foto_perfil_url'],
+      // O parse do foto_perfil_url foi removido
       alunos: alunos,
     );
   }
+  
   DashboardData copyWith({
     String? nomeResponsavel,
     String? cpfResponsavel,
     String? email,
     String? telefone,
-    String? fotoPerfilUrl,
+    // fotoPerfilUrl removido do copyWith
     List<Aluno>? alunos,
   }) {
     return DashboardData(
@@ -120,13 +127,12 @@ class DashboardData {
       cpfResponsavel: cpfResponsavel ?? this.cpfResponsavel,
       email: email ?? this.email,
       telefone: telefone ?? this.telefone,
-      fotoPerfilUrl: fotoPerfilUrl ?? this.fotoPerfilUrl,
+      // fotoPerfilUrl removido do copyWith
       alunos: alunos ?? this.alunos,
     );
   }
 }
 
-// --- TELA PRINCIPAL (MainScreen) ---
 class MainScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
   const MainScreen({super.key, required this.responseData});
@@ -138,21 +144,18 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late List<Widget> _pages;
-  // --- CHAVE GLOBAL PARA ACESSAR O ESTADO DA TELA FINANCEIRA ---
   final GlobalKey<_FinancialScreenState> _financialScreenKey = GlobalKey<_FinancialScreenState>();
 
   @override
   void initState() {
     super.initState();
     _pages = [
-      // --- PASSA A CHAVE PARA A FINANCIALSCREEN ---
       FinancialScreen(key: _financialScreenKey, responseData: widget.responseData),
       const CalendarScreen(),
       ProfileScreen(responseData: widget.responseData),
     ];
   }
 
-  // --- FUNÇÃO PARA ATUALIZAR DADOS NA TELA FINANCEIRA ---
   void _refreshFinancialData() {
     _financialScreenKey.currentState?.reloadData();
   }
@@ -197,11 +200,8 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-
-// --- WIDGET DA PÁGINA FINANCEIRO (FinancialScreen) ---
 class FinancialScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
-  // --- RECEBE A CHAVE NO CONSTRUTOR ---
   const FinancialScreen({required this.responseData, super.key});
   @override
   State<FinancialScreen> createState() => _FinancialScreenState();
@@ -216,7 +216,6 @@ class _FinancialScreenState extends State<FinancialScreen> {
     _dashboardDataFuture = Future.value(DashboardData.fromJson(widget.responseData));
   }
 
-  // --- MÉTODO PARA RECARREGAR DADOS DO SERVIDOR ---
   Future<void> reloadData() async {
     final prefs = await SharedPreferences.getInstance();
     final cpf = prefs.getString('user_cpf');
@@ -238,10 +237,9 @@ class _FinancialScreenState extends State<FinancialScreen> {
         });
       }
     } catch (e) {
-      // Trata o erro silenciosamente para não quebrar a UI
+      // Trata o erro
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -315,11 +313,11 @@ class _FinancialScreenState extends State<FinancialScreen> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Row(
         children: [
+          // Widget da foto de perfil foi removido daqui.
           CircleAvatar(
             radius: 30,
             backgroundColor: Colors.white.withAlpha(51),
-            backgroundImage: data.fotoPerfilUrl != null ? NetworkImage(data.fotoPerfilUrl!) : null,
-            child: data.fotoPerfilUrl == null ? const Icon(Icons.person, size: 30, color: Colors.white) : null,
+            child: const Icon(Icons.person, size: 30, color: Colors.white),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -351,8 +349,8 @@ class _FinancialScreenState extends State<FinancialScreen> {
   }
 
   Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf) {
-    const Color primaryColor = Color(0xFF1D449B); // Cor atualizada
-    const Color accentColor = Color(0xFF25B6E8); // Cor atualizada
+    const Color primaryColor = Color(0xFF1D449B);
+    const Color accentColor = Color(0xFF25B6E8);
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
     if (mensalidade == null) {
@@ -427,7 +425,6 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 decoration: BoxDecoration( gradient: const LinearGradient(colors: [primaryColor, accentColor]), borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: primaryColor.withAlpha(76), blurRadius: 12, offset: const Offset(0, 6))], ),
                 child: ElevatedButton(
                   onPressed: () async {
-                    // --- ALTERAÇÃO: Aguarda o resultado da tela de pagamento ---
                     final result = await Navigator.push(context, MaterialPageRoute(
                       builder: (context) => PaymentScreen(
                         mensalidadeId: mensalidade.id,
@@ -435,7 +432,6 @@ class _FinancialScreenState extends State<FinancialScreen> {
                         mesReferencia: DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
                       ),
                     ));
-                    // --- Se o resultado for 'true', recarrega os dados ---
                     if (result == true) {
                       reloadData();
                     }
@@ -457,9 +453,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
         const SizedBox(height: 24),
         OutlinedButton.icon(
           onPressed: () async {
-            // --- ALTERAÇÃO: Aguarda o resultado da tela de histórico ---
             final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
-             // --- Se o resultado for 'true', recarrega os dados ---
             if (result == true) {
               reloadData();
             }
