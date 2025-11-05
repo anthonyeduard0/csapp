@@ -1,5 +1,8 @@
 // Arquivo: lib/screens/profile_screen.dart
 // VERSÃO LIMPA E CORRIGIDA: Removida toda a lógica de upload e exibição da foto de perfil.
+// MODIFICADO: Uso de ApiConfig.baseUrl.
+// CORRIGIDO: Aviso 'use_build_context_synchronously' resolvido.
+// NOVO: Adicionado telefone e rótulos de identificação (Email: / Telefone:).
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/main_screen.dart'; 
@@ -8,6 +11,7 @@ import 'package:educsa/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:educsa/api_config.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
@@ -37,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final password = prefs.getString('user_password');
     if (cpf == null || password == null) return;
     
-    final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
+    final url = Uri.parse('${ApiConfig.baseUrl}/login/');
     try {
       final response = await http.post(
         url,
@@ -102,7 +106,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             title: 'Configurações',
                             subtitle: 'Ajustes do aplicativo',
                             onTap: () {
-                               Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                               if(mounted) {
+                                 Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                               }
                             }
                           ),
                           _buildOptionTile(
@@ -114,6 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               final prefs = await SharedPreferences.getInstance();
                               await prefs.remove('user_cpf');
                               await prefs.remove('user_password');
+                              
                               if(mounted) {
                                 Navigator.of(context).pushAndRemoveUntil(
                                   MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -142,8 +149,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Column(
         children: [
-          // Widget da foto de perfil foi removido daqui.
-          // Um ícone simples é exibido em seu lugar.
           CircleAvatar(
             radius: 50,
             backgroundColor: Colors.white.withAlpha(51),
@@ -152,7 +157,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 12),
           Text(_dashboardData.nomeResponsavel, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(_dashboardData.email, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+          
+          // NOVO: Exibição do E-mail formatado
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Email: ', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+              Text(_dashboardData.email, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            ],
+          ),
+          
+          // NOVO: Exibição do Telefone formatado (se existir)
+          if (_dashboardData.telefone != null && _dashboardData.telefone!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Telefone: ', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(_dashboardData.telefone!, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -237,4 +263,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-

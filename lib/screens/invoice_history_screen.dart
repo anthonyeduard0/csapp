@@ -1,6 +1,7 @@
 // Arquivo: lib/screens/invoice_history_screen.dart
 // ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso de um pagamento em lote.
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
+// MODIFICADO: Uso de ApiConfig.baseUrl.
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:educsa/screens/payment_screen.dart';
 import 'package:educsa/screens/main_screen.dart';
+import 'package:educsa/api_config.dart'; // Importação adicionada
 
 class InvoiceHistoryScreen extends StatefulWidget {
   final String responsavelCpf;
@@ -56,7 +58,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   }
 
   Future<List<AlunoComMensalidades>> _fetchInvoiceHistory() async {
-    final url = Uri.parse('https://csa-url-app.onrender.com/api/mensalidades/?cpf=${widget.responsavelCpf}');
+    // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
+    final url = Uri.parse('${ApiConfig.baseUrl}/mensalidades/?cpf=${widget.responsavelCpf}');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -110,7 +113,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
     if (!mounted) return;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
-    final url = Uri.parse('https://csa-url-app.onrender.com/api/pagamento/criar-pix-lote/');
+    // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
+    final url = Uri.parse('${ApiConfig.baseUrl}/pagamento/criar-pix-lote/');
     try {
       final response = await http.post(
         url,

@@ -1,6 +1,8 @@
 // Arquivo: lib/screens/login_screen.dart
 // ATUALIZADO: Salva CPF e senha para recarregamento automático de dados.
 // ATUALIZADO: Gradiente de cores alterado conforme solicitado.
+// MODIFICADO: Uso de ApiConfig.baseUrl.
+// CORRIGIDO: Aviso 'use_build_context_synchronously' resolvido com verificação 'if (mounted)'.
 
 import 'package:educsa/screens/terms_acceptance_screen.dart';
 import 'package:flutter/gestures.dart';
@@ -10,6 +12,7 @@ import 'dart:convert';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:educsa/api_config.dart'; // Importação adicionada
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -52,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final cpf = _cpfController.text;
     final password = _passwordController.text;
 
-    final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
+    final url = Uri.parse('${ApiConfig.baseUrl}/login/');
 
     try {
       final response = await http.post(
@@ -61,28 +64,34 @@ class _LoginScreenState extends State<LoginScreen> {
         body: jsonEncode(<String, String>{ 'cpf': cpf, 'password': password, }),
       ).timeout(const Duration(seconds: 50));
 
-      if (!mounted) return;
+      if (!mounted) return; // Primeira verificação de segurança
 
       if (response.statusCode == 200) {
-        // --- ALTERAÇÃO: Salvar CPF e senha ---
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_cpf', cpf);
         await prefs.setString('user_password', password);
-        // --- Fim da Alteração ---
 
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute( builder: (context) => TermsAcceptanceWrapper(responseData: responseData), ),
-        );
+        // Uso de context após a verificação de mounted
+        if (mounted) { 
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute( builder: (context) => TermsAcceptanceWrapper(responseData: responseData), ),
+          );
+        }
       } else {
         final errorData = jsonDecode(utf8.decode(response.bodyBytes));
-        ScaffoldMessenger.of(context).showSnackBar( SnackBar( backgroundColor: Colors.redAccent, content: Text('Erro de login: ${errorData['error']}')), );
+        // Uso de context após a verificação de mounted
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar( SnackBar( backgroundColor: Colors.redAccent, content: Text('Erro de login: ${errorData['error']}')), );
+        }
       }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar( const SnackBar( backgroundColor: Colors.redAccent, content: Text( 'Não foi possível conectar ao servidor. Verifique sua conexão.')), );
+      // Uso de context após a verificação de mounted
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar( const SnackBar( backgroundColor: Colors.redAccent, content: Text( 'Não foi possível conectar ao servidor. Verifique sua conexão.')), );
+      }
     } finally {
       if (mounted) { setState(() { _isLoading = false; }); }
     }
@@ -105,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Image.asset( 'assets/images/newlogo.png', height: 120, ),
+                Image.asset( 'assets/images/Logocsa.png', height: 120, ),
                 const SizedBox(height: 20),
                 const Text( 'Seja bem-vindo(a)!', style: TextStyle( color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, ), ),
                 const SizedBox(height: 10),

@@ -1,7 +1,7 @@
 name: educsa
 description: "Aplicativo de comunicação do Colégio Santo Antônio."
 publish_to: 'none' 
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.4.3 <4.0.0'
@@ -33,5 +33,5 @@ flutter:
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "assets/images/csalogo.png"
+  image_path: "assets/images/educsaicon3.png"
   remove_alpha_ios: true

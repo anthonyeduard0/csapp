@@ -1,5 +1,6 @@
 // Arquivo: lib/screens/terms_acceptance_screen.dart
 // ATUALIZADO: Revertido para o fundo branco e melhorado o estilo.
+// MODIFICADO: Uso de ApiConfig.baseUrl.
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,7 @@ import 'dart:convert';
 import 'package:educsa/screens/main_screen.dart';
 import 'package:educsa/screens/legal_screen.dart';
 import 'package:flutter/gestures.dart';
+import 'package:educsa/api_config.dart'; // Importação adicionada
 
 class TermsAcceptanceWrapper extends StatelessWidget {
   final Map<String, dynamic> responseData;
@@ -34,8 +36,8 @@ class _TermsAcceptancePageState extends State<_TermsAcceptancePage> {
     });
 
     final cpf = widget.responseData['cpf'];
-    final url =
-        Uri.parse('https://csa-url-app.onrender.com/api/aceitar-termos/');
+    // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
+    final url = Uri.parse('${ApiConfig.baseUrl}/aceitar-termos/');
 
     try {
       final response = await http.post(
@@ -315,4 +317,3 @@ class _TermsAcceptancePage extends StatefulWidget {
   @override
   State<_TermsAcceptancePage> createState() => _TermsAcceptancePageState();
 }
-

@@ -1,5 +1,7 @@
 // Arquivo: lib/screens/main_screen.dart
 // VERSÃO LIMPA: Removida a lógica de exibição da foto de perfil.
+// MODIFICADO: Uso de ApiConfig.baseUrl.
+// CORRIGIDO: Removida a função '_refreshFinancialData' não utilizada.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
@@ -10,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:educsa/api_config.dart'; // Importação adicionada
 
 class Mensalidade {
   final String id;
@@ -156,9 +159,10 @@ class _MainScreenState extends State<MainScreen> {
     ];
   }
 
-  void _refreshFinancialData() {
-    _financialScreenKey.currentState?.reloadData();
-  }
+  // REMOVIDA: A função não utilizada foi removida.
+  // void _refreshFinancialData() {
+  //   _financialScreenKey.currentState?.reloadData();
+  // }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -223,7 +227,8 @@ class _FinancialScreenState extends State<FinancialScreen> {
 
     if (cpf == null || password == null) return;
     
-    final url = Uri.parse('https://csa-url-app.onrender.com/api/login/');
+    // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
+    final url = Uri.parse('${ApiConfig.baseUrl}/login/');
     try {
       final response = await http.post(
         url,

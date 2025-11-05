@@ -1,6 +1,7 @@
 // Arquivo: lib/screens/payment_screen.dart
 // ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso do pagamento.
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
+// MODIFICADO: Uso de ApiConfig.baseUrl e remoção da variável _backendUrl.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:educsa/api_config.dart'; // Importação adicionada
 
 class PaymentScreen extends StatefulWidget {
   final String mensalidadeId;
@@ -31,7 +33,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Future<Map<String, dynamic>>? _pixDataFuture;
   Timer? _pollingTimer;
   bool _isPaid = false;
-  final String _backendUrl = 'https://csa-url-app.onrender.com/api';
+  // REMOVIDA: final String _backendUrl = 'https://csa-url-app.onrender.com/api';
 
   static const Color primaryColor = Color(0xFF1D449B);
   static const Color accentColor = Color(0xFF25B6E8);
@@ -66,8 +68,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Future<void> _checkPaymentStatus() async {
     try {
+      // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
       final response = await http.get(
-        Uri.parse('$_backendUrl/pagamento/status/${widget.mensalidadeId}/'),
+        Uri.parse('${ApiConfig.baseUrl}/pagamento/status/${widget.mensalidadeId}/'),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -85,8 +88,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Future<Map<String, dynamic>> _gerarPagamentoPixIndividual() async {
     try {
+      // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
       final response = await http.post(
-        Uri.parse('$_backendUrl/pagamento/criar-pix/'),
+        Uri.parse('${ApiConfig.baseUrl}/pagamento/criar-pix/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'mensalidade_id': widget.mensalidadeId}),
       );

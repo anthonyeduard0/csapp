@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:educsa/api_config.dart'; // Importação adicionada
 
 // Modelo de dados (sem alterações)
 class Evento {
@@ -86,7 +87,8 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
 
   Future<void> _fetchEvents() async {
     try {
-      final response = await http.get(Uri.parse('https://csa-url-app.onrender.com/api/eventos/'));
+      // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
+      final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/eventos/'));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
         final Map<DateTime, List<Evento>> events = {};
