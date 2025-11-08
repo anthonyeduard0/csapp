@@ -3,6 +3,8 @@
 // MODIFICADO: Uso de ApiConfig.baseUrl.
 // CORRIGIDO: Aviso 'use_build_context_synchronously' resolvido.
 // NOVO: Adicionado telefone e rótulos de identificação (Email: / Telefone:).
+// CORRIGIDO: Adicionado SnackBar para erro no _reloadData.
+// CORRIGIDO (RESPONSIVIDADE): Corrigido o layout de _buildInfoRow e _buildHeader para fontes grandes.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/main_screen.dart'; 
@@ -57,7 +59,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
-      // Erro silencioso
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao recarregar o perfil. Verifique sua conexão.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -117,16 +126,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             subtitle: 'Encerrar sua sessão atual',
                             color: Colors.red.shade700,
                             onTap: () async {
+                              final navigator = Navigator.of(context);
+                              
                               final prefs = await SharedPreferences.getInstance();
                               await prefs.remove('user_cpf');
                               await prefs.remove('user_password');
                               
-                              if(mounted) {
-                                Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                                  (Route<dynamic> route) => false,
-                                );
-                              }
+                              if (!mounted) return; 
+
+                              navigator.pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                (Route<dynamic> route) => false,
+                              );
                             }
                           ),
                           const SizedBox(height: 24),
@@ -158,21 +169,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(_dashboardData.nomeResponsavel, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           
-          // NOVO: Exibição do E-mail formatado
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // --- CORREÇÃO (RESPONSIVIDADE): Row -> Wrap ---
+          Wrap( // Usar Wrap permite quebrar a linha se o email for muito grande
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text('Email: ', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
               Text(_dashboardData.email, style: const TextStyle(color: Colors.white70, fontSize: 14)),
             ],
           ),
           
-          // NOVO: Exibição do Telefone formatado (se existir)
           if (_dashboardData.telefone != null && _dashboardData.telefone!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              // --- CORREÇÃO (RESPONSIVIDADE): Row -> Wrap ---
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   const Text('Telefone: ', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
                   Text(_dashboardData.telefone!, style: const TextStyle(color: Colors.white70, fontSize: 14)),
@@ -208,14 +221,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // --- CORREÇÃO (RESPONSIVIDADE): Layout da Row ajustado ---
   Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start, // Alinha pelo topo se o texto quebrar
       children: [
         Icon(icon, color: Colors.grey.shade400, size: 20),
         const SizedBox(width: 12),
-        Text(label, style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
-        const Spacer(),
-        Flexible(
+        Expanded( // O label pode crescer e quebrar a linha
+          child: Text(
+            label, 
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+          ),
+        ),
+        const SizedBox(width: 16), // Espaçamento fixo
+        Flexible( // Permite que o valor ocupe o espaço restante e quebre linha
           child: Text(
             value,
             textAlign: TextAlign.end,

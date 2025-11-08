@@ -1,6 +1,7 @@
 // Arquivo: lib/screens/terms_acceptance_screen.dart
 // ATUALIZADO: Revertido para o fundo branco e melhorado o estilo.
 // MODIFICADO: Uso de ApiConfig.baseUrl.
+// SINCRONIZADO: Texto dos Termos de Uso atualizado.
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -81,10 +82,11 @@ class _TermsAcceptancePageState extends State<_TermsAcceptancePage> {
 
     if (type == "terms") {
       title = "Termos de Uso";
+      // --- TEXTO SINCRONIZADO ---
       content = '''
 TERMOS DE USO DO APLICATIVO EDUCSA
 
-Última atualização: 14 de setembro de 2025
+Última atualização: 06 de novembro de 2025
 
 Bem-vindo(a) ao EduCSA! Por favor, leia atentamente os seguintes Termos de Uso ("Termos") antes de utilizar nossa plataforma.
 
@@ -163,6 +165,7 @@ e) Utilizar a Plataforma para fins comerciais, como publicidade ou spam, sem a a
 ''';
     } else {
       title = "Política de Privacidade";
+      // O texto da política de privacidade permanece o mesmo
       content = '''
 POLÍTICA DE PRIVACIDADE E SEGURANÇA
 

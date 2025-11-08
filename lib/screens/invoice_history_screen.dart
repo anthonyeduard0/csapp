@@ -2,6 +2,7 @@
 // ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso de um pagamento em lote.
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
 // MODIFICADO: Uso de ApiConfig.baseUrl.
+// CORRIGIDO (RESPONSIVIDADE): Corrigidos overflows na TabBar e nos Cards de fatura.
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -219,7 +220,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          // --- CORREÇÃO (RESPONSIVIDADE): Adicionado Flexible ---
+          const Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -252,8 +254,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
         tabs: const [
-          Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.pending_actions_rounded, size: 20), SizedBox(width: 8), Text('Em aberto') ])),
-          Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.check_circle_rounded, size: 20), SizedBox(width: 8), Text('Pagas') ])),
+          // --- CORREÇÃO (RESPONSIVIDADE): Adicionado Flexible ao Text ---
+          Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.pending_actions_rounded, size: 20), SizedBox(width: 8), Flexible(child: Text('Em aberto')) ])),
+          Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.check_circle_rounded, size: 20), SizedBox(width: 8), Flexible(child: Text('Pagas')) ])),
         ],
       ),
     );
@@ -367,7 +370,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                             child: const Icon(Icons.receipt_long_rounded, color: primaryColor, size: 20),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(child: Text('Mensalidade de $mesFormatado', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryColor))),
+                          // --- CORREÇÃO (RESPONSIVIDADE): Adicionado Flexible ---
+                          Flexible(
+                            child: Text('Mensalidade de $mesFormatado', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryColor))
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -375,7 +381,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                         children: [
                           Icon(Icons.calendar_today_rounded, size: 16, color: Colors.grey.shade600),
                           const SizedBox(width: 8),
-                          Text('Vencimento: ${formatadorVencimento.format(mensalidade.dataVencimento)}', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                          // --- CORREÇÃO (RESPONSIVIDADE): Adicionado Flexible ---
+                          Flexible(
+                            child: Text('Vencimento: ${formatadorVencimento.format(mensalidade.dataVencimento)}', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),

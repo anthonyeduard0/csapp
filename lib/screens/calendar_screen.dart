@@ -1,6 +1,8 @@
 // lib/screens/calendar_screen.dart
 // VERSÃO COMPLETA CORRIGIDA: Avisos de 'prefer_const_constructors' resolvidos.
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
+// CORRIGIDO (RESPONSIVIDADE): Adicionado Expanded ao Text de eventos para evitar overflow.
+// CORRIGIDO (ESTILO): Alterado todayDecoration para contorno preto.
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -259,10 +261,16 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                 outsideDaysVisible: true,
                 outsideTextStyle: TextStyle(color: Color(0xFFCBD5E1)),
                 weekendTextStyle: TextStyle(color: Colors.red),
+                // --- CORREÇÃO (ESTILO): Alterado para contorno preto ---
                 todayDecoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Color(0xFF67E8F9), Color(0xFF22D3EE)]),
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Color(0x4D22D3EE), blurRadius: 8, offset: Offset(0, 4))]),
+                  color: Colors.transparent, // Fundo transparente
+                  border: Border.fromBorderSide(
+                    BorderSide(color: Colors.black, width: 2.0), // Contorno preto
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                todayTextStyle: TextStyle(color: Colors.black), // Garante que o texto do dia seja legível
+                // --- Fim da Correção ---
                 selectedDecoration: BoxDecoration(
                     gradient: LinearGradient(colors: [primaryColor, accentColor]),
                     shape: BoxShape.circle,
@@ -293,9 +301,12 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                         child: const Icon(Icons.event_rounded, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        _selectedDay != null ? 'Eventos de ${DateFormat('dd/MM/yyyy').format(_selectedDay!)}' : 'Eventos do dia',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+                      // --- CORREÇÃO (OVERFLOW): Adicionado Expanded ---
+                      Expanded(
+                        child: Text(
+                          _selectedDay != null ? 'Eventos de ${DateFormat('dd/MM/yyyy').format(_selectedDay!)}' : 'Eventos do dia',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+                        ),
                       ),
                     ],
                   ),

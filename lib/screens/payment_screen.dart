@@ -1,7 +1,8 @@
 // Arquivo: lib/screens/payment_screen.dart
 // ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso do pagamento.
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
-// MODIFICADO: Uso de ApiConfig.baseUrl e remoção da variável _backendUrl.
+// MODIFICADO: Uso de ApiConfig.baseUrl.
+// CORRIGIDO: Adicionado debugPrint para erro silencioso no _checkPaymentStatus.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -82,7 +83,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         }
       }
     } catch (e) {
-      // Erro silencioso
+      // --- CORREÇÃO: Adicionado debugPrint para o erro silencioso ---
+      // Erro silencioso para o usuário, mas visível para o desenvolvedor
+      debugPrint("Falha ao checar status do pagamento: $e");
     }
   }
 

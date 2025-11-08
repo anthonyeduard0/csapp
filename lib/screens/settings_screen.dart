@@ -1,6 +1,8 @@
 // Arquivo: lib/screens/settings_screen.dart
 // VERSÃO FINAL: Redesenhada com novo estilo e lógica atualizada.
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
+// MODIFICADO: Removida a seção de Notificações.
+// SINCRONIZADO: Texto dos Termos de Uso atualizado.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/legal_screen.dart'; // Importa a tela de documentos legais
@@ -20,36 +22,90 @@ class SettingsScreen extends StatelessWidget {
 
     if (type == "terms") {
       title = "Termos de Uso";
+      // --- TEXTO SINCRONIZADO ---
       content = '''
-TERMOS DE USO
+TERMOS DE USO DO APLICATIVO EDUCSA
 
-VISÃO GERAL
+Última atualização: 14 de setembro de 2025
 
-1.  O EduCSA é uma plataforma digital (web e mobile) cujos direitos pertencem ao Colégio Santo Antônio. O objetivo principal é facilitar e melhorar a gestão da comunicação e do engajamento no ambiente educacional, auxiliando os usuários (educadores, responsáveis e alunos) em sua jornada.
+Bem-vindo(a) ao EduCSA! Por favor, leia atentamente os seguintes Termos de Uso ("Termos") antes de utilizar nossa plataforma.
 
-CONSIDERAÇÕES GERAIS
+Ao clicar em "Li e aceito os Termos" ou ao acessar e utilizar os serviços oferecidos pelo aplicativo EduCSA ("Plataforma"), você ("Usuário") reconhece que leu, compreendeu e concorda em ficar vinculado a estes Termos e à nossa Política de Privacidade.
 
-2.  Os presentes Termos de Uso são aplicáveis aos serviços prestados pelo Colégio Santo Antônio (aqui referido como "Instituição"), sociedade empresária inscrita no CNPJ sob o nº [10.894.861/0001-14], em relação a seus usuários da plataforma (web e mobile), tanto educadores quanto responsáveis e alunos.
-3.  Para que o usuário possa usufruir dos serviços ofertados pelo EduCSA, deverá ler minuciosamente e, por meio do clique no botão “LI E ACEITO OS TERMOS”, declarar que, antes mesmo de cadastrar-se, entendeu e aceitou os termos estabelecidos no presente documento, bem como na Política de Privacidade.
-4.  Somente serão validados os cadastros na plataforma realizados por pessoas físicas que possuam plena capacidade civil, ou por aquelas que, não a possuindo plenamente, realizem o cadastro devidamente assistidas por seu responsável. Pessoas jurídicas poderão se cadastrar por meio de seus representantes legais, sem prejuízo das sanções civis previstas no Código Civil (Lei nº 10.406/2002).
+1. VISÃO GERAL E ACEITAÇÃO
 
-CADASTRO
+1.1. A plataforma digital EduCSA (aplicativo móvel e portal web) é um serviço de propriedade e operado pelo Colégio Santo Antônio, sociedade empresária inscrita no CNPJ sob o nº 10.894.861/0001-14, doravante denominada "Instituição".
 
-5.  O cadastro para utilização da plataforma deverá ser efetuado através do aplicativo EduCSA, com o devido preenchimento do formulário, apresentando os dados pertinentes e a respectiva autorização para uso destes, conforme disposições do documento “Política de Privacidade”, reservando-se à Instituição a faculdade de suspender ou cancelar cadastros de usuários que violem estes Termos de Uso.
-6.  O cadastro é formal e materialmente válido apenas para usuários residentes e domiciliados em território brasileiro, tendo em vista que o serviço ofertado pelo EduCSA envolve apenas estabelecimentos do referido país.
-7.  O usuário garante a veracidade e a exatidão dos dados pessoais que forneça no momento do cadastro, pelo que assume a sua inteira responsabilidade. A Instituição não se responsabiliza por incongruência dos dados pessoais introduzidos pelo usuário no referido cadastro.
+1.2. O objetivo da Plataforma é servir como um canal oficial de comunicação e gestão de informações acadêmicas e financeiras entre a Instituição e sua comunidade, incluindo, mas não se limitando a, educadores, alunos e seus respectivos pais ou responsáveis legais ("Usuários").
 
-CONDIÇÕES DE USO
+1.3. A aceitação destes Termos é requisito indispensável para a utilização da Plataforma. Se você não concordar com qualquer uma das disposições aqui presentes, não deverá utilizar os serviços.
 
-8.  O EduCSA atua como intermediador na comunicação entre os usuários (educadores, responsáveis e alunos). Por essa razão, a Instituição não se responsabiliza pelas relações estabelecidas entre usuários, sendo da respectiva parte a inteira responsabilidade pelas informações inseridas na plataforma e por sua veracidade.
-9.  É dever dos usuários, na utilização da plataforma, sempre seguir a boa-fé nas relações civis, respeitando a legislação vigente. Não é permitido:
-    * Divulgar conteúdo ou praticar qualquer ato que infrinja ou viole os direitos de terceiros ou a lei;
-    * Divulgar materiais ofensivos, pornográficos, ou que promovam ou façam apologia a terrorismo, violência ou qualquer forma de discriminação, seja racial, sexual, de origem, religiosa, ou que, mesmo de outras formas, atente contra direitos humanos;
-    * Divulgar documentos de identificação ou informações financeiras confidenciais de terceiros.
-10. O acesso à plataforma (web e mobile) depende de login e senha, que são pessoais e intransferíveis, sendo o usuário o único responsável por sua guarda e uso.
+2. CADASTRO E ELEGIBILIDADE
+
+2.1. O acesso à Plataforma requer um cadastro prévio, que será disponibilizado pela Instituição aos responsáveis legais dos alunos devidamente matriculados.
+
+2.2. O Usuário deve be uma pessoa física com plena capacidade civil. Menores de 18 anos devem ser representados ou assistidos por seus pais ou responsáveis legais, que serão os titulares da conta e responsáveis por todos os atos praticados por meio dela.
+
+2.3. O Usuário compromete-se a fornecer informações verdadeiras, precisas, atuais e completas no momento do cadastro, e a mantê-las atualizadas. A Instituição não se responsabiliza pela veracidade dos dados fornecidos, sendo esta uma responsabilidade exclusiva do Usuário.
+
+2.4. O acesso à conta é pessoal e intransferível, protegido por um CPF e uma senha. O Usuário é o único responsável pela confidencialidade e segurança de suas credenciais de acesso e por todas as atividades que ocorram em sua conta. A Instituição deve ser notificada imediatamente sobre qualquer uso não autorizado.
+
+3. FUNCIONALIDADES E SERVIÇOS
+
+3.1. A Plataforma oferece, entre outras, as seguintes funcionalidades:
+a) Acesso a informações financeiras, como boletos de mensalidades, histórico de pagamentos e situação de débitos.
+b) Realização de pagamentos de mensalidades através de um gateway de pagamento terceirizado.
+c) Acesso ao calendário escolar, com eventos, feriados e datas importantes.
+d) Canal de comunicação oficial entre a Instituição e os responsáveis.
+
+4. PAGAMENTOS E TRANSAÇÕES FINANCEIRAS
+
+4.1. Os pagamentos de mensalidades e outras taxas escolares realizados através da Plataforma são processados por uma empresa terceirizada (gateway de pagamento). Ao realizar uma transação, o Usuário concorda com os termos de serviço do respectivo gateway.
+
+4.2. A Instituição não armazena dados de cartões de crédito ou outras informações financeiras sensíveis do Usuário. A responsabilidade pela segurança da transação é do gateway de pagamento.
+
+4.3. Em caso de atraso no pagamento, serão aplicados multa e juros moratórios conforme o contrato de prestação de serviços educacionais firmado entre o Usuário e a Instituição. Tais valores serão calculados e exibidos automaticamente na Plataforma.
+
+5. CONDIÇÕES DE USO E CONDUTA
+
+5.1. O Usuário concorda em utilizar a Plataforma apenas para os fins a que se destina e em conformidade com a lei, a moral e os bons costumes.
+
+5.2. É estritamente proibido ao Usuário:
+a) Utilizar a Plataforma para qualquer finalidade ilícita, difamatória, ofensiva, ou que viole os direitos de terceiros.
+b) Publicar ou transmitir qualquer conteúdo que contenha vírus, malware ou outro componente de software malicioso.
+c) Tentar obter acesso não autorizado a sistemas, contas ou dados de outros Usuários.
+d) Divulgar conteúdo que promova violência, discriminação de qualquer natureza (racial, sexual, religiosa, etc.) ou que atente contra os direitos humanos.
+e) Utilizar a Plataforma para fins comerciais, como publicidade ou spam, sem a autorização prévia e expressa da Instituição.
+
+6. PROPRIEDADE INTELECTUAL
+
+6.1. Todos os direitos de propriedade intelectual relacionados à Plataforma, incluindo o nome "EduCSA", logotipos, software, design, textos, gráficos e outros conteúdos, são de propriedade exclusiva da Instituição ou de seus licenciantes. A utilização da Plataforma não concede ao Usuário qualquer direito de propriedade sobre esses elementos.
+
+7. LIMITAÇÃO DE RESPONSABILIDADE
+
+7.1. A Instituição envidará seus melhores esforços para manter a Plataforma disponível e funcional. No entanto, não garante o acesso e uso contínuo ou ininterrupto, que pode ser eventualmente afetado por falhas técnicas, manutenção ou circunstâncias fora de seu controle.
+
+7.2. A Instituição atua como facilitadora da comunicação e da gestão financeira. Não se responsabiliza pelo conteúdo gerado pelos Usuários ou pela veracidade das informações trocadas entre eles.
+
+7.3. A Instituição não será responsável por quaisquer danos, prejuízos ou perdas sofridas pelo Usuário em razão de falhas na internet, no sistema ou no servidor, ou decorrentes de condutas de terceiros, como ataques de hackers.
+
+8. SUSPENSÃO E CANCELAMENTO DA CONTA
+
+8.1. A Instituição reserva-se o direito de suspender ou cancelar, a qualquer momento e sem aviso prévio, o acesso do Usuário à Plataforma em caso de violação destes Termos, da Política de Privacidade ou da legislação aplicável.
+
+8.2. O acesso à Plataforma está intrinsecamente ligado ao vínculo do aluno com a Instituição. Em caso de rescisão do contrato de prestação de serviços educacionais, o acesso do Usuário à Plataforma poderá ser desativado.
+
+9. DISPOSIÇÕES GERAIS
+
+9.1. Modificações nos Termos: A Instituição poderá alterar estes Termos a qualquer momento. As alterações entrarão em vigor na data de sua publicação na Plataforma. O uso continuado do serviço após a publicação constituirá aceitação dos novos Termos.
+
+9.2. Legislação e Foro: Estes Termos são regidos pelas leis da República Federativa do Brasil. Fica eleito o foro da comarca de Agrestina, Estado de Pernambuco, para dirimir quaisquer controvérsias oriundas deste documento, com renúncia expressa a qualquer outro, por mais privilegiado que seja.
+
+9.3. Contato: Em caso de dúvidas sobre estes Termos de Uso, entre em contato conosco através dos canais oficiais de atendimento do Colégio Santo Antônio.
 ''';
     } else {
       title = "Políticas de Privacidade";
+      // O texto da política de privacidade permanece o mesmo
       content = '''
 Política de Privacidade do Aplicativo EduCSA
 Última atualização: 02 de setembro de 2025
@@ -178,17 +234,8 @@ E-mail: csaagrestina@gmail.com
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Geral", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
-                        const SizedBox(height: 16),
-                        _buildOptionTile(
-                          icon: Icons.notifications_rounded,
-                          title: 'Notificações',
-                          subtitle: 'Gerencie os alertas do app',
-                          onTap: () {
-                            // Lógica para a tela de notificações pode ser adicionada aqui
-                          },
-                        ),
-                        const SizedBox(height: 24),
+                        // --- SEÇÃO DE NOTIFICAÇÕES REMOVIDA ---
+                        
                         const Text("Legal", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
                         const SizedBox(height: 16),
                         _buildOptionTile(

@@ -1,4 +1,5 @@
 // Arquivo: lib/main.dart
+// MODIFICADO: Trocado ThemeData.dark() por AppTheme.darkTheme
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,7 +29,8 @@ class MyApp extends StatelessWidget {
       title: 'EduCSA',
       // +++ TEMA APLICADO +++
       theme: AppTheme.theme,
-      darkTheme: ThemeData.dark(), // Pode ser customizado depois
+      // --- CORREÇÃO 2: Use o tema escuro customizado ---
+      darkTheme: AppTheme.darkTheme, 
       themeMode: Provider.of<ThemeProvider>(context).themeMode,
       home: const LoginScreen(),
       debugShowCheckedModeBanner: false,

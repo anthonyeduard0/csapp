@@ -1,7 +1,5 @@
 // Arquivo: lib/screens/main_screen.dart
-// VERSÃO LIMPA: Removida a lógica de exibição da foto de perfil.
-// MODIFICADO: Uso de ApiConfig.baseUrl.
-// CORRIGIDO: Removida a função '_refreshFinancialData' não utilizada.
+// CORRIGIDO (BUG DE RENDERIZAÇÃO): Removido 'Flexible' de dentro da Column no _buildHeader, que causava a tela em branco.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
@@ -13,6 +11,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:educsa/api_config.dart'; // Importação adicionada
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
+import 'package:url_launcher/url_launcher.dart'; 
 
 class Mensalidade {
   final String id;
@@ -92,7 +92,6 @@ class DashboardData {
   final String cpfResponsavel;
   final String email;
   final String? telefone;
-  // O campo fotoPerfilUrl foi removido daqui
   final List<Aluno> alunos;
   
   DashboardData({ 
@@ -100,7 +99,6 @@ class DashboardData {
     required this.cpfResponsavel, 
     required this.email, 
     this.telefone, 
-    // fotoPerfilUrl removido do construtor
     required this.alunos 
   });
 
@@ -108,11 +106,10 @@ class DashboardData {
     var alunosList = json['alunos'] as List;
     List<Aluno> alunos = alunosList.map((i) => Aluno.fromJson(i)).toList();
     return DashboardData(
-      nomeResponsavel: json['nome_completo'],
+      nomeResponsavel: json['nome_completo'], 
       cpfResponsavel: json['cpf'],
       email: json['email'],
       telefone: json['telefone'],
-      // O parse do foto_perfil_url foi removido
       alunos: alunos,
     );
   }
@@ -122,7 +119,6 @@ class DashboardData {
     String? cpfResponsavel,
     String? email,
     String? telefone,
-    // fotoPerfilUrl removido do copyWith
     List<Aluno>? alunos,
   }) {
     return DashboardData(
@@ -130,7 +126,6 @@ class DashboardData {
       cpfResponsavel: cpfResponsavel ?? this.cpfResponsavel,
       email: email ?? this.email,
       telefone: telefone ?? this.telefone,
-      // fotoPerfilUrl removido do copyWith
       alunos: alunos ?? this.alunos,
     );
   }
@@ -158,11 +153,6 @@ class _MainScreenState extends State<MainScreen> {
       ProfileScreen(responseData: widget.responseData),
     ];
   }
-
-  // REMOVIDA: A função não utilizada foi removida.
-  // void _refreshFinancialData() {
-  //   _financialScreenKey.currentState?.reloadData();
-  // }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -213,6 +203,8 @@ class FinancialScreen extends StatefulWidget {
 
 class _FinancialScreenState extends State<FinancialScreen> {
   Future<DashboardData>? _dashboardDataFuture;
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+
 
   @override
   void initState() {
@@ -227,7 +219,6 @@ class _FinancialScreenState extends State<FinancialScreen> {
 
     if (cpf == null || password == null) return;
     
-    // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
     final url = Uri.parse('${ApiConfig.baseUrl}/login/');
     try {
       final response = await http.post(
@@ -242,9 +233,28 @@ class _FinancialScreenState extends State<FinancialScreen> {
         });
       }
     } catch (e) {
-      // Trata o erro
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao atualizar os dados. Verifique sua conexão.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
+
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o link.')),
+        );
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +279,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 return const Center(child: CircularProgressIndicator(color: Colors.white));
               }
               if (snapshot.hasError || !snapshot.hasData) {
+                // Se o factory .fromJson falhar, o snapshot.error terá o erro.
                 return Center(child: Text('Erro ao carregar dados: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
               }
               final dashboardData = snapshot.data!;
@@ -294,12 +305,19 @@ class _FinancialScreenState extends State<FinancialScreen> {
                         ),
                       ),
                       child: RefreshIndicator(
+                        key: _refreshIndicatorKey,
                         onRefresh: reloadData,
                         color: primaryColor,
                         child: SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(24.0),
-                          child: _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel),
+                          child: Column( 
+                            children: [
+                              _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel),
+                              const SizedBox(height: 24), 
+                              _buildSocialMediaIcons(), 
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -318,7 +336,6 @@ class _FinancialScreenState extends State<FinancialScreen> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Row(
         children: [
-          // Widget da foto de perfil foi removido daqui.
           CircleAvatar(
             radius: 30,
             backgroundColor: Colors.white.withAlpha(51),
@@ -329,11 +346,18 @@ class _FinancialScreenState extends State<FinancialScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Bem-vindo(a),', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                // --- CORREÇÃO (BUG DA TELA BRANCA): Removido Flexible daqui ---
+                const Text(
+                  'Bem-vindo(a),',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                // --- CORREÇÃO (BUG DA TELA BRANCA): Removido Flexible daqui ---
                 Text(
                   data.nomeResponsavel,
                   style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
+                  maxLines: 2, // Permite que o nome quebre em até 2 linhas
                 ),
               ],
             ),
@@ -471,12 +495,81 @@ class _FinancialScreenState extends State<FinancialScreen> {
     );
   }
 
+  Widget _buildSocialMediaIcons() {
+    return Column(
+      children: [
+        Text(
+          'Fale Conosco',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildSocialIcon(
+              FontAwesomeIcons.whatsapp,
+              const Color(0xFF25D366),
+              'https: //wa.me/5581XXXXXXXXX', 
+            ),
+            const SizedBox(width: 24),
+            _buildSocialIcon(
+              FontAwesomeIcons.instagram,
+              const Color(0xFFE4405F),
+              'https: //instagram.com/colegio',
+            ),
+            const SizedBox(width: 24),
+            _buildSocialIcon(
+              FontAwesomeIcons.facebook,
+              const Color(0xFF1877F2),
+              'https: //facebook.com/colegio',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialIcon(IconData icon, Color color, String url) {
+    return InkWell(
+      onTap: () => _launchURL(url),
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(15),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FaIcon(icon, color: color, size: 28),
+      ),
+    );
+  }
+
   Widget _buildDetalheRow(String label, String value) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start, 
       children: [
-        Text(label, style: const TextStyle(color: Colors.black54)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Expanded( 
+          child: Text(
+            label, 
+            style: const TextStyle(color: Colors.black54),
+          ),
+        ),
+        const SizedBox(width: 16), 
+        Text(
+          value, 
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
