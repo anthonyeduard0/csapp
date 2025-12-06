@@ -4,7 +4,13 @@
 // CORRIGIDO: Aviso 'use_build_context_synchronously' resolvido.
 // NOVO: Adicionado telefone e rótulos de identificação (Email: / Telefone:).
 // CORRIGIDO: Adicionado SnackBar para erro no _reloadData.
-// CORRIGIDO (RESPONSIVIDADE): Corrigido o layout de _buildInfoRow e _buildHeader para fontes grandes.
+// CORREÇÃO (HÍBRIDA): Removido FittedBox de "Série/Ano" e "Validade" e aplicado maxLines: 2.
+// CORREÇÃO (HÍBRIDA): Mantido FittedBox para Email e Telefone.
+// CORREÇÃO (HÍBRIDA): Mantido ellipsis para nome do Aluno no Card.
+//
+// +++ ÚLTIMAS ALTERAÇÕES +++
+// 1. Alinhado os valores de _buildInfoRow (Série, Status, Validade) à direita (final da linha).
+// 2. Aumentado ligeiramente o tamanho das fontes na tela para melhor legibilidade.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/main_screen.dart'; 
@@ -104,11 +110,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Alunos Vinculados", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+                          const Text("Alunos Vinculados", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: primaryColor)), // Fonte aumentada
                           const SizedBox(height: 16),
                           ..._dashboardData.alunos.map((aluno) => _buildAlunoCard(aluno)),
                           const SizedBox(height: 24),
-                          const Text("Opções", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+                          const Text("Opções", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: primaryColor)), // Fonte aumentada
                           const SizedBox(height: 16),
                           _buildOptionTile(
                             icon: Icons.settings_rounded,
@@ -141,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             }
                           ),
                           const SizedBox(height: 24),
-                          const Center(child: Text('Versão do Aplicativo 1.0.1', style: TextStyle(color: Colors.grey, fontSize: 12))),
+                          const Center(child: Text('Versão do Aplicativo 1.0.1', style: TextStyle(color: Colors.grey, fontSize: 13))), // Fonte aumentada
                         ],
                       ),
                     ),
@@ -166,29 +172,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Icon(Icons.person, size: 50, color: Colors.white),
           ),
           const SizedBox(height: 12),
-          Text(_dashboardData.nomeResponsavel, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(
+            _dashboardData.nomeResponsavel, 
+            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), // Fonte aumentada
+            maxLines: 1, 
+            softWrap: false, 
+            overflow: TextOverflow.ellipsis, 
+          ),
           const SizedBox(height: 8),
           
-          // --- CORREÇÃO (RESPONSIVIDADE): Row -> Wrap ---
-          Wrap( // Usar Wrap permite quebrar a linha se o email for muito grande
+          Wrap( 
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Text('Email: ', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
-              Text(_dashboardData.email, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+              const Text('Email: ', style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.bold)), // Fonte aumentada
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(_dashboardData.email, style: const TextStyle(color: Colors.white70, fontSize: 15), softWrap: false), // Fonte aumentada
+              ),
             ],
           ),
           
           if (_dashboardData.telefone != null && _dashboardData.telefone!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4.0),
-              // --- CORREÇÃO (RESPONSIVIDADE): Row -> Wrap ---
               child: Wrap(
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Text('Telefone: ', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
-                  Text(_dashboardData.telefone!, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                  const Text('Telefone: ', style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.bold)), // Fonte aumentada
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(_dashboardData.telefone!, style: const TextStyle(color: Colors.white70, fontSize: 15), softWrap: false), // Fonte aumentada
+                  ),
                 ],
               ),
             ),
@@ -209,7 +225,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(aluno.nomeCompleto, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+          Text(
+            aluno.nomeCompleto, 
+            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const Divider(height: 24),
           _buildInfoRow(Icons.school_rounded, 'Série/Ano', aluno.serieAno),
           const SizedBox(height: 12),
@@ -221,30 +242,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- CORREÇÃO (RESPONSIVIDADE): Layout da Row ajustado ---
+  // +++ INÍCIO DA CORREÇÃO (Alinhamento) +++
   Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start, // Alinha pelo topo se o texto quebrar
+      crossAxisAlignment: CrossAxisAlignment.start, 
       children: [
         Icon(icon, color: Colors.grey.shade400, size: 20),
         const SizedBox(width: 12),
-        Expanded( // O label pode crescer e quebrar a linha
-          child: Text(
-            label, 
-            style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
-          ),
+        // Rótulo (ocupa espaço natural)
+        Text(
+          label, 
+          style: TextStyle(color: Colors.grey.shade700, fontSize: 15), // Fonte aumentada
         ),
-        const SizedBox(width: 16), // Espaçamento fixo
-        Flexible( // Permite que o valor ocupe o espaço restante e quebre linha
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor ?? Colors.black87),
+        const SizedBox(width: 16), 
+        // Valor (ocupa o resto do espaço e alinha à direita)
+        Expanded( 
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: valueColor ?? Colors.black87), // Fonte aumentada
+              maxLines: 2, 
+              overflow: TextOverflow.ellipsis, 
+            ),
           ),
         ),
       ],
     );
   }
+  // +++ FIM DA CORREÇÃO (Alinhamento) +++
+
 
   Widget _buildOptionTile({required IconData icon, required String title, required String subtitle, VoidCallback? onTap, Color? color}) {
     return Container(
@@ -269,8 +297,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color ?? Colors.black87)),
-                      Text(subtitle, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: color ?? Colors.black87)), // Fonte aumentada
+                      Text(subtitle, style: TextStyle(fontSize: 15, color: Colors.grey.shade600)), // Fonte aumentada
                     ],
                   ),
                 ),

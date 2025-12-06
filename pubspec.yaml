@@ -1,7 +1,7 @@
 name: educsa
 description: "Aplicativo de comunicação do Colégio Santo Antônio."
 publish_to: 'none' 
-version: 1.0.0+2
+version: 1.0.0+4
 
 environment:
   sdk: '>=3.4.3 <4.0.0'
@@ -16,7 +16,7 @@ dependencies:
   shared_preferences: ^2.2.3
   intl: ^0.20.2
   image_picker: ^1.1.2
-  table_calendar: ^3.1.0
+  table_calendar: ^3.2.0
   url_launcher: ^6.2.6
   font_awesome_flutter: ^10.7.0
 

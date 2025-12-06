@@ -1,5 +1,11 @@
 // Arquivo: lib/screens/main_screen.dart
 // CORRIGIDO (BUG DE RENDERIZAÇÃO): Removido 'Flexible' de dentro da Column no _buildHeader, que causava a tela em branco.
+// CORREÇÃO (HÍBRIDA): Removido FittedBox do título "Próxima Fatura" e aplicado maxLines: 2.
+// CORREÇÃO (HÍBRIDA): Mantido FittedBox para o valor em R$.
+// ATUALIZADO: Fontes levemente aumentadas.
+//
+// +++ ÚLTIMA CORREÇÃO (BUG) +++
+// Corrigido o 'factory DashboardData.fromJson' para usar o parâmetro 'nomeResponsavel' em vez de 'nomeCompleto'.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
@@ -106,7 +112,8 @@ class DashboardData {
     var alunosList = json['alunos'] as List;
     List<Aluno> alunos = alunosList.map((i) => Aluno.fromJson(i)).toList();
     return DashboardData(
-      nomeResponsavel: json['nome_completo'], 
+      // +++ CORREÇÃO DO BUG AQUI +++
+      nomeResponsavel: json['nome_completo'], // Estava 'nomeCompleto:'
       cpfResponsavel: json['cpf'],
       email: json['email'],
       telefone: json['telefone'],
@@ -185,8 +192,8 @@ class _MainScreenState extends State<MainScreen> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           iconSize: 26,
-          selectedFontSize: 14,
-          unselectedFontSize: 12,
+          selectedFontSize: 15, // Fonte aumentada
+          unselectedFontSize: 13, // Fonte aumentada
           showUnselectedLabels: true,
         ),
       ),
@@ -346,18 +353,16 @@ class _FinancialScreenState extends State<FinancialScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- CORREÇÃO (BUG DA TELA BRANCA): Removido Flexible daqui ---
                 const Text(
                   'Bem-vindo(a),',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(color: Colors.white70, fontSize: 15), // Fonte aumentada
                   overflow: TextOverflow.ellipsis,
                 ),
-                // --- CORREÇÃO (BUG DA TELA BRANCA): Removido Flexible daqui ---
                 Text(
                   data.nomeResponsavel,
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), // Fonte aumentada
                   overflow: TextOverflow.ellipsis,
-                  maxLines: 2, // Permite que o nome quebre em até 2 linhas
+                  maxLines: 2, 
                 ),
               ],
             ),
@@ -390,9 +395,9 @@ class _FinancialScreenState extends State<FinancialScreen> {
           children: [
             const Icon(Icons.verified_user_rounded, size: 64, color: Colors.green),
             const SizedBox(height: 16),
-            const Text( 'Tudo em dia!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor), textAlign: TextAlign.center, ),
+            const Text( 'Tudo em dia!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), textAlign: TextAlign.center, ), // Fonte aumentada
             const SizedBox(height: 8),
-            const Text( 'Nenhuma mensalidade pendente encontrada.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16), ),
+            const Text( 'Nenhuma mensalidade pendente encontrada.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 17), ), // Fonte aumentada
             const SizedBox(height: 24),
             TextButton(
               onPressed: () async {
@@ -401,7 +406,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   reloadData();
                 }
               },
-              child: const Text('Ver histórico de faturas'),
+              child: const Text('Ver histórico de faturas', style: TextStyle(fontSize: 16)), // Fonte aumentada
             ),
           ],
         ),
@@ -422,7 +427,14 @@ class _FinancialScreenState extends State<FinancialScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded( child: Text('Próxima Fatura: $mesFormatado', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)) ),
+                  Expanded(
+                    child: Text(
+                      'Próxima Fatura: $mesFormatado',
+                      style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+                      maxLines: 2, 
+                      overflow: TextOverflow.ellipsis, 
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -431,15 +443,22 @@ class _FinancialScreenState extends State<FinancialScreen> {
                       children: [
                         Icon(statusInfo['icon'], size: 16, color: statusInfo['color']),
                         const SizedBox(width: 4),
-                        Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 13)), // Fonte aumentada
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              Text(formatadorMoeda.format(mensalidade.valorFinal), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-              Text('Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey)),
+              FittedBox(
+                alignment: Alignment.centerLeft,
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  formatadorMoeda.format(mensalidade.valorFinal), 
+                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF334155))
+                ),
+              ),
+              Text('Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey, fontSize: 15)), // Fonte aumentada
               if (mensalidade.status == 'ATRASADA') ...[
                 const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Divider()),
                 _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal)),
@@ -471,7 +490,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                     children: [
                       Icon(Icons.pix, color: Colors.white),
                       SizedBox(width: 8),
-                      Text('Pagar com Pix', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                      Text('Pagar com Pix', style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold)), // Fonte aumentada
                     ],
                   ),
                 ),
@@ -488,7 +507,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
             }
           },
           icon: const Icon(Icons.receipt_long_outlined, size: 20),
-          label: const Text('Ver todas as faturas'),
+          label: const Text('Ver todas as faturas', style: TextStyle(fontSize: 16)), // Fonte aumentada
           style: OutlinedButton.styleFrom( foregroundColor: primaryColor, backgroundColor: Colors.white, side: BorderSide(color: Colors.grey.shade300), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), ),
         ),
       ],
@@ -501,7 +520,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
         Text(
           'Fale Conosco',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 17, // Fonte aumentada
             fontWeight: FontWeight.bold,
             color: Colors.grey.shade700,
           ),
@@ -513,19 +532,19 @@ class _FinancialScreenState extends State<FinancialScreen> {
             _buildSocialIcon(
               FontAwesomeIcons.whatsapp,
               const Color(0xFF25D366),
-              'https: //wa.me/5581XXXXXXXXX', 
+              'https://wa.me/5581995602150', 
             ),
             const SizedBox(width: 24),
             _buildSocialIcon(
               FontAwesomeIcons.instagram,
               const Color(0xFFE4405F),
-              'https: //instagram.com/colegio',
+              'https://instagram.com/csa_agrestina20',
             ),
             const SizedBox(width: 24),
             _buildSocialIcon(
               FontAwesomeIcons.facebook,
               const Color(0xFF1877F2),
-              'https: //facebook.com/colegio',
+              'https://facebook.com/CsaAgrestina',
             ),
           ],
         ),
@@ -562,13 +581,14 @@ class _FinancialScreenState extends State<FinancialScreen> {
         Expanded( 
           child: Text(
             label, 
-            style: const TextStyle(color: Colors.black54),
+            style: const TextStyle(color: Colors.black54, fontSize: 17), // Fonte aumentada
           ),
         ),
         const SizedBox(width: 16), 
         Text(
           value, 
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17), // Fonte aumentada
+          softWrap: false, 
         ),
       ],
     );

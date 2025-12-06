@@ -3,6 +3,12 @@
 // ATUALIZADO: Gradiente de cores alterado conforme solicitado.
 // MODIFICADO: Uso de ApiConfig.baseUrl.
 // CORRIGIDO: Aviso 'use_build_context_synchronously' resolvido com verificação 'if (mounted)'.
+// ATUALIZADO: Fontes levemente aumentadas.
+// ATUALIZADO: Adicionados 'const' para resolver avisos de lint.
+//
+// +++ ÚLTIMA ALTERAÇÃO (FUNCIONALIDADE E ALINHAMENTO) +++
+// 1. Corrigido bug no _loadSavedCredentials que impedia o autopreenchimento.
+// 2. Adicionado Padding ao Row do "Lembrar-me" para alinhamento com os TextFields.
 
 import 'package:educsa/screens/terms_acceptance_screen.dart';
 import 'package:flutter/gestures.dart';
@@ -26,11 +32,37 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  bool _rememberMe = false; 
 
   final _cpfFormatter = MaskTextInputFormatter(
     mask: '###.###.###-##',
     filter: {"#": RegExp(r'[0-9]')},
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  // --- CORREÇÃO (BUG DO AUTOPREENCHIMENTO) ---
+  // Usamos a variável local `rememberMe` para o `if`, pois o `_rememberMe` (do setState)
+  // pode não ter sido atualizado ainda no mesmo frame.
+  void _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool rememberMe = prefs.getBool('remember_me') ?? false;
+
+    setState(() {
+      _rememberMe = rememberMe;
+    });
+
+    if (rememberMe) { // Usar a variável local `rememberMe` aqui
+      _cpfController.text = prefs.getString('user_cpf') ?? '';
+      _passwordController.text = prefs.getString('user_password') ?? '';
+    }
+  }
+  // --- FIM DA CORREÇÃO ---
+
 
   void _launchTermsOfUse() async {
     final Uri url = Uri.parse('https://gist.githubusercontent.com/anthonyeduard0/0b02af52257c33aee17c52b2872b19a4/raw/0ecf2b0a2491ff082e5649bc2d20a269643f374f/termos-de-uso.md');
@@ -68,12 +100,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_cpf', cpf);
-        await prefs.setString('user_password', password);
-
+        
+        if (_rememberMe) {
+          await prefs.setBool('remember_me', true);
+          await prefs.setString('user_cpf', cpf);
+          await prefs.setString('user_password', password);
+        } else {
+          await prefs.setBool('remember_me', false);
+          await prefs.remove('user_cpf');
+          await prefs.remove('user_password');
+        }
+        
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         
-        // Uso de context após a verificação de mounted
         if (mounted) { 
           Navigator.pushReplacement(
             context,
@@ -82,13 +121,11 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         final errorData = jsonDecode(utf8.decode(response.bodyBytes));
-        // Uso de context após a verificação de mounted
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar( SnackBar( backgroundColor: Colors.redAccent, content: Text('Erro de login: ${errorData['error']}')), );
         }
       }
     } catch (e) {
-      // Uso de context após a verificação de mounted
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar( const SnackBar( backgroundColor: Colors.redAccent, content: Text( 'Não foi possível conectar ao servidor. Verifique sua conexão.')), );
       }
@@ -114,11 +151,17 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Image.asset( 'assets/images/Logocsa.png', height: 120, ),
+                const Image(image: AssetImage('assets/images/Logocsa.png'), height: 120),
                 const SizedBox(height: 20),
-                const Text( 'Seja bem-vindo(a)!', style: TextStyle( color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, ), ),
+                const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text( 
+                    'Seja bem-vindo(a)!', 
+                    style: TextStyle( color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold, ), 
+                  ),
+                ),
                 const SizedBox(height: 10),
-                const Text( 'Entrar na conta', style: TextStyle( color: Colors.white70, fontSize: 16, ), ),
+                const Text( 'Entrar na conta', style: TextStyle( color: Colors.white70, fontSize: 17, ), ), 
                 const SizedBox(height: 40),
                 _buildTextField(
                   controller: _cpfController,
@@ -141,7 +184,49 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () { setState(() { _isPasswordVisible = !_isPasswordVisible; }); },
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 10),
+                
+                // --- CORREÇÃO (ALINHAMENTO) ---
+                // Adicionado Padding para alinhar o Checkbox com o texto dos campos acima
+                Padding(
+                  padding: const EdgeInsets.only(left: 12.0), 
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: _rememberMe,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              _rememberMe = value ?? false;
+                            });
+                          },
+                          activeColor: Colors.white,
+                          checkColor: const Color(0xFF1D449B),
+                          side: const BorderSide(color: Colors.white70, width: 2),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _rememberMe = !_rememberMe;
+                          });
+                        },
+                        child: const Text(
+                          'Lembrar-me',
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // --- FIM DA CORREÇÃO ---
+                
+                const SizedBox(height: 20),
                 _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : SizedBox(
@@ -162,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 RichText(
                   textAlign: TextAlign.center,
                   text: TextSpan(
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13), 
                     children: [
                       const TextSpan( text: 'Ao entrar, você concorda com nossos ', ),
                       TextSpan(
@@ -201,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
       obscureText: obscureText,
       keyboardType: keyboardType,
       inputFormatters: formatter != null ? [formatter] : [],
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Colors.white, fontSize: 16), 
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: const TextStyle(color: Colors.white70),
@@ -211,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
         fillColor: const Color(0x33FFFFFF),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide.none, 
         ),
       ),
     );

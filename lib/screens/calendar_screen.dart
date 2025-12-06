@@ -2,7 +2,11 @@
 // VERSÃO COMPLETA CORRIGIDA: Avisos de 'prefer_const_constructors' resolvidos.
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
 // CORRIGIDO (RESPONSIVIDADE): Adicionado Expanded ao Text de eventos para evitar overflow.
-// CORRIGIDO (ESTILO): Alterado todayDecoration para contorno preto.
+// ATUALIZADO: Adicionado FittedBox ao headerTitleBuilder (título do mês).
+// ATUALIZADO: Aumentado daysOfWeekHeight para 40.0.
+// ATUALIZADO: Adicionado FittedBox ao dowBuilder (dias da semana).
+// ATUALIZADO: Fontes levemente aumentadas.
+// ATUALIZADO: Adicionados 'const' para resolver avisos de lint.
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -197,8 +201,13 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Calendário Escolar', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                Text('Acompanhe os eventos importantes', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                // +++ CORREÇÃO (PROBLEMA 1) +++
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text('Calendário Escolar', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)), // Fonte aumentada
+                ),
+                Text('Acompanhe os eventos importantes', style: TextStyle(color: Colors.white70, fontSize: 15)), // Fonte aumentada
               ],
             ),
           ),
@@ -208,7 +217,7 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
   }
 
   Widget _buildLoadingState() {
-    return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)));
+    return const Center(child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)), SizedBox(height: 16), Text('Carregando eventos...', style: TextStyle(color: Colors.grey, fontSize: 16)), ], ), );
   }
 
   Widget _buildErrorState() {
@@ -239,8 +248,8 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
               headerStyle: HeaderStyle(
                 formatButtonVisible: false,
                 titleCentered: true,
-                titleTextFormatter: (date, locale) => capitalize(DateFormat.yMMMM(locale).format(date)),
-                titleTextStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+                // titleTextFormatter removido para usar o headerTitleBuilder
+                titleTextStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
                 leftChevronIcon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(color: const Color(0x1A1E3A8A), borderRadius: BorderRadius.circular(12)),
@@ -252,30 +261,82 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                   child: const Icon(Icons.chevron_right, color: primaryColor),
                 ),
               ),
-              daysOfWeekHeight: 30.0,
+              daysOfWeekHeight: 40.0, // +++ CORREÇÃO (ESPAÇO VERTICAL) +++
               daysOfWeekStyle: const DaysOfWeekStyle(
-                weekdayStyle: TextStyle(color: Color(0xFF475569), fontWeight: FontWeight.w600),
-                weekendStyle: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+                // Estilos de fonte removidos daqui para usar o dowBuilder
+              ),
+              calendarBuilders: CalendarBuilders(
+                // +++ INÍCIO DA CORREÇÃO (FittedBox no Título do Mês) +++
+                headerTitleBuilder: (context, date) {
+                  final title = capitalize(DateFormat.yMMMM('pt_BR').format(date));
+                  return Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        title, 
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor) // Fonte aumentada
+                      ),
+                    ),
+                  );
+                },
+                // +++ FIM DA CORREÇÃO +++
+
+                // +++ INÍCIO DA CORREÇÃO (FittedBox nos Dias da Semana) +++
+                dowBuilder: (context, day) {
+                  final text = DateFormat.E('pt_BR').format(day).toUpperCase();
+                  Color textColor = const Color(0xFF475569);
+                  if (day.weekday == DateTime.sunday || day.weekday == DateTime.saturday) {
+                    textColor = Colors.red;
+                  }
+                  return Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        text, 
+                        style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 15) // Fonte aumentada
+                      ),
+                    ),
+                  );
+                },
+                // +++ FIM DA CORREÇÃO +++
+
+                // Marcador de evento
+                markerBuilder: (context, day, events) {
+                  if (events.isNotEmpty) {
+                    return Positioned(
+                      bottom: 4,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFA7F3D0), 
+                          shape: BoxShape.circle
+                        ),
+                      ),
+                    );
+                  }
+                  return null;
+                },
               ),
               calendarStyle: const CalendarStyle(
                 outsideDaysVisible: true,
                 outsideTextStyle: TextStyle(color: Color(0xFFCBD5E1)),
-                weekendTextStyle: TextStyle(color: Colors.red),
-                // --- CORREÇÃO (ESTILO): Alterado para contorno preto ---
+                // Estilos de fonte aumentados
+                defaultTextStyle: TextStyle(fontSize: 16),
+                weekendTextStyle: TextStyle(color: Colors.red, fontSize: 16),
                 todayDecoration: BoxDecoration(
-                  color: Colors.transparent, // Fundo transparente
+                  color: Colors.transparent, 
                   border: Border.fromBorderSide(
-                    BorderSide(color: Colors.black, width: 2.0), // Contorno preto
+                    BorderSide(color: Colors.black, width: 2.0), 
                   ),
                   shape: BoxShape.circle,
                 ),
-                todayTextStyle: TextStyle(color: Colors.black), // Garante que o texto do dia seja legível
-                // --- Fim da Correção ---
+                todayTextStyle: TextStyle(color: Colors.black, fontSize: 16),
                 selectedDecoration: BoxDecoration(
                     gradient: LinearGradient(colors: [primaryColor, accentColor]),
                     shape: BoxShape.circle,
                     boxShadow: [BoxShadow(color: Color(0x661E3A8A), blurRadius: 12, offset: Offset(0, 6))]),
-                markerDecoration: BoxDecoration(color: Color(0xFFA7F3D0), shape: BoxShape.circle),
+                selectedTextStyle: TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
           ),
@@ -301,11 +362,10 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                         child: const Icon(Icons.event_rounded, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      // --- CORREÇÃO (OVERFLOW): Adicionado Expanded ---
                       Expanded(
                         child: Text(
                           _selectedDay != null ? 'Eventos de ${DateFormat('dd/MM/yyyy').format(_selectedDay!)}' : 'Eventos do dia',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+                          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
                         ),
                       ),
                     ],
@@ -344,7 +404,7 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
           children: [
             Icon(Icons.event_busy_rounded, size: 48, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text('Nenhum evento para este dia', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+            Text('Nenhum evento para este dia', style: TextStyle(fontSize: 17, color: Colors.grey.shade600)), // Fonte aumentada
           ],
         ),
       ),
@@ -400,8 +460,8 @@ class _EventCardState extends State<EventCard> {
             ),
             child: const Icon(Icons.event_note_rounded, color: Colors.white, size: 20),
           ),
-          title: Text(widget.evento.titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor)),
-          subtitle: Text(horario, style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
+          title: Text(widget.evento.titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: primaryColor)), // Fonte aumentada
+          subtitle: Text(horario, style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13)), // Fonte aumentada
           trailing: Icon(
             _isExpanded ? Icons.expand_less : Icons.expand_more,
             color: primaryColor,
@@ -414,7 +474,7 @@ class _EventCardState extends State<EventCard> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     widget.evento.descricao!,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14, height: 1.5),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 15, height: 1.5), // Fonte aumentada
                   ),
                 ),
               ),

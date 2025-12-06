@@ -3,6 +3,7 @@
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
 // MODIFICADO: Removida a seção de Notificações.
 // SINCRONIZADO: Texto dos Termos de Uso atualizado.
+// ATUALIZADO: Adicionados 'const' para resolver avisos de lint.
 
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/legal_screen.dart'; // Importa a tela de documentos legais
@@ -271,7 +272,7 @@ E-mail: csaagrestina@gmail.com
             onTap: () => Navigator.pop(context),
             child: Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.white.withAlpha(51), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: const Color(0x33FFFFFF), borderRadius: BorderRadius.circular(16)),
               child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
             ),
           ),
@@ -296,7 +297,7 @@ E-mail: csaagrestina@gmail.com
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)],
+        boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 10)], // Aviso de const literal
       ),
       child: Material(
         color: Colors.transparent,
@@ -318,7 +319,7 @@ E-mail: csaagrestina@gmail.com
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 16),
+                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16), // Aviso de const
               ],
             ),
           ),

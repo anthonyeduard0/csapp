@@ -2,7 +2,10 @@
 // ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso de um pagamento em lote.
 // ATUALIZADO: Gradiente de cores alterado para consistência visual.
 // MODIFICADO: Uso de ApiConfig.baseUrl.
-// CORRIGIDO (RESPONSIVIDADE): Corrigidos overflows na TabBar e nos Cards de fatura.
+// CORREÇÃO (HÍBRIDA): Removido FittedBox do título "Mensalidade de..." e aplicado maxLines: 2.
+// CORREÇÃO (HÍBRIDA): Mantido FittedBox para o valor em R$.
+// ATUALIZADO: Fontes levemente aumentadas.
+// ATUALIZADO: Adicionados 'const' para resolver avisos de lint.
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -220,13 +223,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
             ),
           ),
           const SizedBox(width: 16),
-          // --- CORREÇÃO (RESPONSIVIDADE): Adicionado Flexible ---
           const Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Minhas Faturas', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                Text('Gerencie seus pagamentos', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                FittedBox( 
+                  fit: BoxFit.scaleDown,
+                  child: Text('Minhas Faturas', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)) // Fonte aumentada
+                ),
+                Text('Gerencie seus pagamentos', style: TextStyle(color: Colors.white70, fontSize: 15)), // Fonte aumentada
               ],
             ),
           ),
@@ -251,27 +256,50 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         dividerColor: Colors.transparent,
         labelColor: primaryColor,
         unselectedLabelColor: Colors.white,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17), // Fonte aumentada
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 17), // Fonte aumentada
         tabs: const [
-          // --- CORREÇÃO (RESPONSIVIDADE): Adicionado Flexible ao Text ---
-          Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.pending_actions_rounded, size: 20), SizedBox(width: 8), Flexible(child: Text('Em aberto')) ])),
-          Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.check_circle_rounded, size: 20), SizedBox(width: 8), Flexible(child: Text('Pagas')) ])),
+          Tab(
+            child: FittedBox( 
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, 
+                children: [ 
+                  Icon(Icons.pending_actions_rounded, size: 20), 
+                  SizedBox(width: 8), 
+                  Text('Em aberto') 
+                ]
+              ),
+            ),
+          ),
+          Tab(
+            child: FittedBox( 
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, 
+                children: [ 
+                  Icon(Icons.check_circle_rounded, size: 20), 
+                  SizedBox(width: 8), 
+                  Text('Pagas') 
+                ]
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildLoadingState() {
-    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor), strokeWidth: 3), SizedBox(height: 16), Text('Carregando faturas...', style: TextStyle(color: Colors.grey, fontSize: 16)), ], ), );
+    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor), strokeWidth: 3), SizedBox(height: 16), Text('Carregando faturas...', style: TextStyle(color: Colors.grey, fontSize: 17)), ], ), ); // Fonte aumentada
   }
 
   Widget _buildErrorState(String error) {
-    return Center( child: Container( margin: const EdgeInsets.all(24), padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.shade200)), child: Column( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 48), const SizedBox(height: 16), Text('Erro: $error', textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700, fontSize: 16)), ], ), ), );
+    return Center( child: Container( margin: const EdgeInsets.all(24), padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.shade200)), child: Column( mainAxisSize: MainAxisSize.min, children: [ const Icon(Icons.error_outline_rounded, color: Colors.red, size: 48), const SizedBox(height: 16), Text('Erro: $error', textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700, fontSize: 17)), ], ), ), ); // Fonte aumentada
   }
   
   Widget _buildEmptyState() {
-    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey), SizedBox(height: 16), Text('Nenhuma fatura encontrada', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)), ], ), );
+    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey), SizedBox(height: 16), Text('Nenhuma fatura encontrada', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w500, color: Colors.grey)), ], ), ); // Fonte aumentada
   }
 
   Map<String, dynamic> _getStatusInfo(String status) {
@@ -301,7 +329,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                     child: Icon(isPending ? Icons.pending_actions_rounded : Icons.check_circle_rounded, size: 48, color: Colors.grey.shade400),
                   ),
                   const SizedBox(height: 16),
-                  Text(isPending ? 'Nenhuma fatura pendente' : 'Nenhuma fatura paga', style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                  Text(isPending ? 'Nenhuma fatura pendente' : 'Nenhuma fatura paga', style: TextStyle(fontSize: 17, color: Colors.grey.shade600, fontWeight: FontWeight.w500)), // Fonte aumentada
                 ],
               ),
             ),
@@ -370,20 +398,23 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                             child: const Icon(Icons.receipt_long_rounded, color: primaryColor, size: 20),
                           ),
                           const SizedBox(width: 12),
-                          // --- CORREÇÃO (RESPONSIVIDADE): Adicionado Flexible ---
                           Flexible(
-                            child: Text('Mensalidade de $mesFormatado', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryColor))
+                            child: Text(
+                              'Mensalidade de $mesFormatado', 
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            )
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today_rounded, size: 16, color: Colors.grey.shade600),
+                          const Icon(Icons.calendar_today_rounded, size: 16, color: Colors.grey),
                           const SizedBox(width: 8),
-                          // --- CORREÇÃO (RESPONSIVIDADE): Adicionado Flexible ---
                           Flexible(
-                            child: Text('Vencimento: ${formatadorVencimento.format(mensalidade.dataVencimento)}', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                            child: Text('Vencimento: ${formatadorVencimento.format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey, fontSize: 15), softWrap: false), // Fonte aumentada
                           ),
                         ],
                       ),
@@ -392,7 +423,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Flexible(
-                            child: Text(formatadorMoeda.format(mensalidade.valorFinal), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor))
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                formatadorMoeda.format(mensalidade.valorFinal), 
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada (base)
+                                softWrap: false, 
+                              )
+                            )
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -402,7 +441,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                               children: [
                                 Icon(statusInfo['icon'], size: 16, color: statusInfo['color']),
                                 const SizedBox(width: 4),
-                                Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 12)),
+                                Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 13)), // Fonte aumentada
                               ],
                             ),
                           ),
@@ -436,10 +475,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Flexible(
-                    child: Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                    child: Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 15)), // Fonte aumentada
                   ),
                   const SizedBox(height: 4),
-                  Text(NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(_totalSelecionado), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
+                  Text(NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(_totalSelecionado), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryColor)), // Fonte aumentada
                 ],
               ),
             ),
@@ -463,7 +502,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                   children: [
                     Icon(Icons.payment_rounded, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Pagar', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('Pagar', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)), // Fonte aumentada
                   ],
                 ),
               ),
