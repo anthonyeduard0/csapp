@@ -1,12 +1,5 @@
-// Arquivo: lib/screens/main_screen.dart
-// CORRIGIDO (BUG DE RENDERIZAÇÃO): Removido 'Flexible' de dentro da Column no _buildHeader, que causava a tela em branco.
-// CORREÇÃO (HÍBRIDA): Removido FittedBox do título "Próxima Fatura" e aplicado maxLines: 2.
-// CORREÇÃO (HÍBRIDA): Mantido FittedBox para o valor em R$.
-// ATUALIZADO: Fontes levemente aumentadas.
-//
-// +++ ÚLTIMA CORREÇÃO (BUG) +++
-// Corrigido o 'factory DashboardData.fromJson' para usar o parâmetro 'nomeResponsavel' em vez de 'nomeCompleto'.
 
+import 'package:educsa/utils/responsive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
 import 'package:educsa/screens/payment_screen.dart';
@@ -16,9 +9,9 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:educsa/api_config.dart'; // Importação adicionada
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
-import 'package:url_launcher/url_launcher.dart'; 
+import 'package:educsa/api_config.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Mensalidade {
   final String id;
@@ -112,8 +105,7 @@ class DashboardData {
     var alunosList = json['alunos'] as List;
     List<Aluno> alunos = alunosList.map((i) => Aluno.fromJson(i)).toList();
     return DashboardData(
-      // +++ CORREÇÃO DO BUG AQUI +++
-      nomeResponsavel: json['nome_completo'], // Estava 'nomeCompleto:'
+      nomeResponsavel: json['nome_completo'],
       cpfResponsavel: json['cpf'],
       email: json['email'],
       telefone: json['telefone'],
@@ -169,6 +161,13 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ResponsiveLayout(
+      mobileBody: _buildMobileLayout(),
+      desktopBody: _buildDesktopLayout(),
+    );
+  }
+
+  Widget _buildMobileLayout() {
     const Color primaryColor = Color(0xFF1E3A8A);
     return Scaffold(
       body: IndexedStack(
@@ -192,10 +191,48 @@ class _MainScreenState extends State<MainScreen> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           iconSize: 26,
-          selectedFontSize: 15, // Fonte aumentada
-          unselectedFontSize: 13, // Fonte aumentada
+          selectedFontSize: 15, 
+          unselectedFontSize: 13,
           showUnselectedLabels: true,
         ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      body: Row(
+        children: [
+          NavigationRail(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onItemTapped,
+            labelType: NavigationRailLabelType.all,
+            destinations: const [
+              NavigationRailDestination(
+                icon: Icon(Icons.monetization_on_outlined),
+                selectedIcon: Icon(Icons.monetization_on),
+                label: Text('Financeiro'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.calendar_today_outlined),
+                selectedIcon: Icon(Icons.calendar_today),
+                label: Text('Calendário'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: Text('Perfil'),
+              ),
+            ],
+          ),
+          const VerticalDivider(thickness: 1, width: 1),
+          Expanded(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: _pages,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -286,7 +323,6 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 return const Center(child: CircularProgressIndicator(color: Colors.white));
               }
               if (snapshot.hasError || !snapshot.hasData) {
-                // Se o factory .fromJson falhar, o snapshot.error terá o erro.
                 return Center(child: Text('Erro ao carregar dados: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
               }
               final dashboardData = snapshot.data!;
@@ -315,15 +351,20 @@ class _FinancialScreenState extends State<FinancialScreen> {
                         key: _refreshIndicatorKey,
                         onRefresh: reloadData,
                         color: primaryColor,
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column( 
-                            children: [
-                              _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel),
-                              const SizedBox(height: 24), 
-                              _buildSocialMediaIcons(), 
-                            ],
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 800),
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column( 
+                                children: [
+                                  _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel),
+                                  const SizedBox(height: 24), 
+                                  _buildSocialMediaIcons(), 
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -355,12 +396,12 @@ class _FinancialScreenState extends State<FinancialScreen> {
               children: [
                 const Text(
                   'Bem-vindo(a),',
-                  style: TextStyle(color: Colors.white70, fontSize: 15), // Fonte aumentada
+                  style: TextStyle(color: Colors.white70, fontSize: 15), 
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   data.nomeResponsavel,
-                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), // Fonte aumentada
+                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), 
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2, 
                 ),
@@ -383,7 +424,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
   }
 
   Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf) {
-    const Color primaryColor = Color(0xFF1D449B);
+    const Color primaryColor = Color(0xFF1E3A8A);
     const Color accentColor = Color(0xFF25B6E8);
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
@@ -395,9 +436,9 @@ class _FinancialScreenState extends State<FinancialScreen> {
           children: [
             const Icon(Icons.verified_user_rounded, size: 64, color: Colors.green),
             const SizedBox(height: 16),
-            const Text( 'Tudo em dia!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), textAlign: TextAlign.center, ), // Fonte aumentada
+            const Text( 'Tudo em dia!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), textAlign: TextAlign.center, ), 
             const SizedBox(height: 8),
-            const Text( 'Nenhuma mensalidade pendente encontrada.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 17), ), // Fonte aumentada
+            const Text( 'Nenhuma mensalidade pendente encontrada.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 17), ), 
             const SizedBox(height: 24),
             TextButton(
               onPressed: () async {
@@ -406,7 +447,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   reloadData();
                 }
               },
-              child: const Text('Ver histórico de faturas', style: TextStyle(fontSize: 16)), // Fonte aumentada
+              child: const Text('Ver histórico de faturas', style: TextStyle(fontSize: 16)), 
             ),
           ],
         ),
@@ -430,7 +471,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   Expanded(
                     child: Text(
                       'Próxima Fatura: $mesFormatado',
-                      style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+                      style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold, color: primaryColor), 
                       maxLines: 2, 
                       overflow: TextOverflow.ellipsis, 
                     ),
@@ -443,7 +484,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                       children: [
                         Icon(statusInfo['icon'], size: 16, color: statusInfo['color']),
                         const SizedBox(width: 4),
-                        Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 13)), // Fonte aumentada
+                        Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 13)), 
                       ],
                     ),
                   ),
@@ -458,7 +499,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF334155))
                 ),
               ),
-              Text('Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey, fontSize: 15)), // Fonte aumentada
+              Text('Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey, fontSize: 15)), 
               if (mensalidade.status == 'ATRASADA') ...[
                 const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Divider()),
                 _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal)),
@@ -490,7 +531,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                     children: [
                       Icon(Icons.pix, color: Colors.white),
                       SizedBox(width: 8),
-                      Text('Pagar com Pix', style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold)), // Fonte aumentada
+                      Text('Pagar com Pix', style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold)), 
                     ],
                   ),
                 ),
@@ -507,7 +548,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
             }
           },
           icon: const Icon(Icons.receipt_long_outlined, size: 20),
-          label: const Text('Ver todas as faturas', style: TextStyle(fontSize: 16)), // Fonte aumentada
+          label: const Text('Ver todas as faturas', style: TextStyle(fontSize: 16)), 
           style: OutlinedButton.styleFrom( foregroundColor: primaryColor, backgroundColor: Colors.white, side: BorderSide(color: Colors.grey.shade300), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), ),
         ),
       ],
@@ -520,7 +561,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
         Text(
           'Fale Conosco',
           style: TextStyle(
-            fontSize: 17, // Fonte aumentada
+            fontSize: 17, 
             fontWeight: FontWeight.bold,
             color: Colors.grey.shade700,
           ),
@@ -581,13 +622,13 @@ class _FinancialScreenState extends State<FinancialScreen> {
         Expanded( 
           child: Text(
             label, 
-            style: const TextStyle(color: Colors.black54, fontSize: 17), // Fonte aumentada
+            style: const TextStyle(color: Colors.black54, fontSize: 17), 
           ),
         ),
         const SizedBox(width: 16), 
         Text(
           value, 
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17), // Fonte aumentada
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17), 
           softWrap: false, 
         ),
       ],

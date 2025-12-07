@@ -1,16 +1,5 @@
-// Arquivo: lib/screens/login_screen.dart
-// ATUALIZADO: Salva CPF e senha para recarregamento automático de dados.
-// ATUALIZADO: Gradiente de cores alterado conforme solicitado.
-// MODIFICADO: Uso de ApiConfig.baseUrl.
-// CORRIGIDO: Aviso 'use_build_context_synchronously' resolvido com verificação 'if (mounted)'.
-// ATUALIZADO: Fontes levemente aumentadas.
-// ATUALIZADO: Adicionados 'const' para resolver avisos de lint.
-//
-// +++ ÚLTIMA ALTERAÇÃO (FUNCIONALIDADE E ALINHAMENTO) +++
-// 1. Corrigido bug no _loadSavedCredentials que impedia o autopreenchimento.
-// 2. Adicionado Padding ao Row do "Lembrar-me" para alinhamento com os TextFields.
 
-import 'package:educsa/screens/terms_acceptance_screen.dart';
+import 'package:educsa/utils/responsive_layout.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -18,7 +7,9 @@ import 'dart:convert';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:educsa/api_config.dart'; // Importação adicionada
+import 'package:educsa/api_config.dart'; 
+import 'package:educsa/screens/terms_acceptance_screen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
-  bool _rememberMe = false; 
+  bool _rememberMe = false;
 
   final _cpfFormatter = MaskTextInputFormatter(
     mask: '###.###.###-##',
@@ -45,9 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _loadSavedCredentials();
   }
 
-  // --- CORREÇÃO (BUG DO AUTOPREENCHIMENTO) ---
-  // Usamos a variável local `rememberMe` para o `if`, pois o `_rememberMe` (do setState)
-  // pode não ter sido atualizado ainda no mesmo frame.
   void _loadSavedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
     final bool rememberMe = prefs.getBool('remember_me') ?? false;
@@ -56,19 +44,17 @@ class _LoginScreenState extends State<LoginScreen> {
       _rememberMe = rememberMe;
     });
 
-    if (rememberMe) { // Usar a variável local `rememberMe` aqui
+    if (rememberMe) {
       _cpfController.text = prefs.getString('user_cpf') ?? '';
       _passwordController.text = prefs.getString('user_password') ?? '';
     }
   }
-  // --- FIM DA CORREÇÃO ---
-
 
   void _launchTermsOfUse() async {
     final Uri url = Uri.parse('https://gist.githubusercontent.com/anthonyeduard0/0b02af52257c33aee17c52b2872b19a4/raw/0ecf2b0a2491ff082e5649bc2d20a269643f374f/termos-de-uso.md');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar( const SnackBar(content: Text('Não foi possível abrir o link dos termos.')), );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o link dos termos.')),);
     }
   }
 
@@ -76,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final Uri url = Uri.parse('https://gist.githubusercontent.com/anthonyeduard0/05ddce8404f3af175acff888101994c2/raw/fe2abf43c91983fe78ff053c626b2f3f1c6bfb6c/politica_de_privacidade.md');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar( const SnackBar(content: Text('Não foi possível abrir o link da política.')), );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o link da política.')),);
     }
   }
 
@@ -92,11 +78,11 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final response = await http.post(
         url,
-        headers: <String, String>{ 'Content-Type': 'application/json; charset=UTF-8', },
-        body: jsonEncode(<String, String>{ 'cpf': cpf, 'password': password, }),
+        headers: <String, String>{'Content-Type': 'application/json; charset=UTF-8',},
+        body: jsonEncode(<String, String>{'cpf': cpf, 'password': password,}),
       ).timeout(const Duration(seconds: 50));
 
-      if (!mounted) return; // Primeira verificação de segurança
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
         final prefs = await SharedPreferences.getInstance();
@@ -136,6 +122,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    
+    final mobileBody = _buildLoginForm(isDesktop: false);
+    
+    final desktopBody = Center(
+      child: Container(
+        width: 400,
+        child: Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: _buildLoginForm(isDesktop: true),
+        ),
+      ),
+    );
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -145,129 +145,140 @@ class _LoginScreenState extends State<LoginScreen> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const Image(image: AssetImage('assets/images/Logocsa.png'), height: 120),
-                const SizedBox(height: 20),
-                const FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text( 
-                    'Seja bem-vindo(a)!', 
-                    style: TextStyle( color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold, ), 
+        child: ResponsiveLayout(
+          mobileBody: mobileBody,
+          desktopBody: desktopBody,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginForm({required bool isDesktop}) {
+    // Define colors based on the platform
+    final Color primaryTextColor = isDesktop ? Colors.black87 : Colors.white;
+    final Color secondaryTextColor = isDesktop ? Colors.black54 : Colors.white70;
+    final Color fieldFillColor = isDesktop ? Colors.grey[200]! : const Color(0x33FFFFFF);
+    final Color fieldIconColor = isDesktop ? Colors.grey[600]! : Colors.white70;
+    final Color buttonBackgroundColor = isDesktop ? const Color(0xFF1E3A8A) : Colors.white;
+    final Color buttonForegroundColor = isDesktop ? Colors.white : const Color(0xFF1E3A8A);
+
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          const Image(image: AssetImage('assets/images/Logocsa.png'), height: 120),
+          const SizedBox(height: 20),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'Seja bem-vindo(a)!',
+              style: TextStyle(color: primaryTextColor, fontSize: 30, fontWeight: FontWeight.bold,),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text('Entrar na conta', style: TextStyle(color: secondaryTextColor, fontSize: 17,),),
+          const SizedBox(height: 40),
+          _buildTextField(
+            controller: _cpfController,
+            formatter: _cpfFormatter,
+            hintText: 'CPF',
+            icon: Icons.person_outline,
+            keyboardType: TextInputType.number,
+            isDesktop: isDesktop
+          ),
+          const SizedBox(height: 20),
+          _buildTextField(
+            controller: _passwordController,
+            hintText: 'Senha',
+            icon: Icons.lock_outline,
+            obscureText: !_isPasswordVisible,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                color: fieldIconColor,
+              ),
+              onPressed: () { setState(() { _isPasswordVisible = !_isPasswordVisible; }); },
+            ),
+            isDesktop: isDesktop
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _rememberMe,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _rememberMe = value ?? false;
+                      });
+                    },
+                    activeColor: isDesktop ? const Color(0xFF1D449B) : Colors.white,
+                    checkColor: isDesktop ? Colors.white : const Color(0xFF1D449B),
+                    side: BorderSide(color: secondaryTextColor, width: 2),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
-                const SizedBox(height: 10),
-                const Text( 'Entrar na conta', style: TextStyle( color: Colors.white70, fontSize: 17, ), ), 
-                const SizedBox(height: 40),
-                _buildTextField(
-                  controller: _cpfController,
-                  formatter: _cpfFormatter,
-                  hintText: 'CPF',
-                  icon: Icons.person_outline,
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  controller: _passwordController,
-                  hintText: 'Senha',
-                  icon: Icons.lock_outline,
-                  obscureText: !_isPasswordVisible,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.white70,
-                    ),
-                    onPressed: () { setState(() { _isPasswordVisible = !_isPasswordVisible; }); },
-                  ),
-                ),
-                const SizedBox(height: 10),
-                
-                // --- CORREÇÃO (ALINHAMENTO) ---
-                // Adicionado Padding para alinhar o Checkbox com o texto dos campos acima
-                Padding(
-                  padding: const EdgeInsets.only(left: 12.0), 
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Checkbox(
-                          value: _rememberMe,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              _rememberMe = value ?? false;
-                            });
-                          },
-                          activeColor: Colors.white,
-                          checkColor: const Color(0xFF1D449B),
-                          side: const BorderSide(color: Colors.white70, width: 2),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _rememberMe = !_rememberMe;
-                          });
-                        },
-                        child: const Text(
-                          'Lembrar-me',
-                          style: TextStyle(color: Colors.white70, fontSize: 16),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // --- FIM DA CORREÇÃO ---
-                
-                const SizedBox(height: 20),
-                _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF1E3A8A),
-                            disabledBackgroundColor: Colors.white.withAlpha(128),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(30), ),
-                          ),
-                          child: const Text( 'ENTRAR', style: TextStyle( fontSize: 18, fontWeight: FontWeight.bold, ), ),
-                        ),
-                      ),
-                const SizedBox(height: 40),
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: const TextStyle(color: Colors.white70, fontSize: 13), 
-                    children: [
-                      const TextSpan( text: 'Ao entrar, você concorda com nossos ', ),
-                      TextSpan(
-                        text: 'Termos de Uso',
-                        style: const TextStyle( fontWeight: FontWeight.bold, decoration: TextDecoration.underline, ),
-                        recognizer: TapGestureRecognizer()..onTap = _launchTermsOfUse,
-                      ),
-                      const TextSpan(text: ' e '),
-                      TextSpan(
-                        text: 'Política de Privacidade.',
-                        style: const TextStyle( fontWeight: FontWeight.bold, decoration: TextDecoration.underline, ),
-                        recognizer: TapGestureRecognizer()..onTap = _launchPrivacyPolicy,
-                      ),
-                    ],
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _rememberMe = !_rememberMe;
+                    });
+                  },
+                  child: Text(
+                    'Lembrar-me',
+                    style: TextStyle(color: secondaryTextColor, fontSize: 16),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+          const SizedBox(height: 20),
+          _isLoading
+              ? CircularProgressIndicator(color: isDesktop ? const Color(0xFF1E3A8A) : Colors.white)
+              : SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: buttonBackgroundColor,
+                      foregroundColor: buttonForegroundColor,
+                      disabledBackgroundColor: buttonBackgroundColor.withAlpha(128),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30),),
+                    ),
+                    child: const Text('ENTRAR', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,),),
+                  ),
+                ),
+          const SizedBox(height: 40),
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: TextStyle(color: secondaryTextColor, fontSize: 13),
+              children: [
+                const TextSpan(text: 'Ao entrar, você concorda com nossos ',),
+                TextSpan(
+                  text: 'Termos de Uso',
+                  style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline,),
+                  recognizer: TapGestureRecognizer()..onTap = _launchTermsOfUse,
+                ),
+                const TextSpan(text: ' e '),
+                TextSpan(
+                  text: 'Política de Privacidade.',
+                  style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline,),
+                  recognizer: TapGestureRecognizer()..onTap = _launchPrivacyPolicy,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -280,25 +291,32 @@ class _LoginScreenState extends State<LoginScreen> {
     Widget? suffixIcon,
     TextInputType? keyboardType,
     MaskTextInputFormatter? formatter,
+    required bool isDesktop
   }) {
+    final Color textColor = isDesktop ? Colors.black87 : Colors.white;
+    final Color hintColor = isDesktop ? Colors.black54 : Colors.white70;
+    final Color iconColor = isDesktop ? Colors.grey[600]! : Colors.white70;
+    final Color fillColor = isDesktop ? Colors.grey[200]! : const Color(0x33FFFFFF);
+
     return TextField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       inputFormatters: formatter != null ? [formatter] : [],
-      style: const TextStyle(color: Colors.white, fontSize: 16), 
+      style: TextStyle(color: textColor, fontSize: 16),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: Colors.white70),
-        prefixIcon: Icon(icon, color: Colors.white70),
+        hintStyle: TextStyle(color: hintColor),
+        prefixIcon: Icon(icon, color: iconColor),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color(0x33FFFFFF),
+        fillColor: fillColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none, 
+          borderSide: BorderSide.none,
         ),
       ),
     );
   }
 }
+
