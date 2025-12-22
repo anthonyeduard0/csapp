@@ -27,6 +27,9 @@ class AppTheme {
       brightness: Brightness.light,
       primaryColor: primaryLight,
       scaffoldBackgroundColor: backgroundLight,
+      colorScheme: const ColorScheme.light(
+        secondary: accentLight,
+      ),
       
       // Tema da AppBar
       appBarTheme: const AppBarTheme(
@@ -43,8 +46,7 @@ class AppTheme {
       ),
 
       // Tema dos Cards
-      // CORREÇÃO: Trocado CardTheme por CardThemeData
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: cardBackgroundLight,
         elevation: 2,
         margin: const EdgeInsets.only(bottom: 16),
@@ -81,10 +83,9 @@ class AppTheme {
       ),
 
       // Tema da TabBar
-      // CORREÇÃO: Trocado TabBarTheme por TabBarThemeData
-      tabBarTheme: const TabBarThemeData(
+      tabBarTheme: const TabBarTheme(
         labelColor: primaryLight,
-        unselectedLabelColor: Colors.white, // Inconsistente?
+        unselectedLabelColor: textSecondaryLight, 
         indicator: UnderlineTabIndicator(
           borderSide: BorderSide(
             color: Colors.white,
@@ -95,30 +96,32 @@ class AppTheme {
     );
   }
 
-  // --- NOVO: Tema Escuro ---
+  // --- Tema Escuro ---
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,
       primaryColor: primaryDark,
       scaffoldBackgroundColor: backgroundDark,
+      colorScheme: const ColorScheme.dark(
+        secondary: accentDark,
+      ),
       
       // Tema da AppBar
       appBarTheme: const AppBarTheme(
-        backgroundColor: cardBackgroundDark, // Fundo do appbar escuro
-        foregroundColor: textPrimaryDark, // Texto do appbar claro
+        backgroundColor: backgroundDark,
+        foregroundColor: textPrimaryDark,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: textPrimaryDark, // Texto claro
-          inherit: false, // Correção explícita
+          color: textPrimaryDark,
+          inherit: false,
         ),
       ),
 
       // Tema dos Cards
-      // CORREÇÃO: Trocado CardTheme por CardThemeData
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: cardBackgroundDark,
         elevation: 2,
         margin: const EdgeInsets.only(bottom: 16),
@@ -155,8 +158,7 @@ class AppTheme {
       ),
 
       // Tema da TabBar
-      // CORREÇÃO: Trocado TabBarTheme por TabBarThemeData
-      tabBarTheme: const TabBarThemeData(
+      tabBarTheme: const TabBarTheme(
         labelColor: primaryDark,
         unselectedLabelColor: textSecondaryDark,
         indicator: UnderlineTabIndicator(
