@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'EduCSA',
       // +++ TEMA APLICADO +++
-      theme: AppTheme.theme,
+      theme: AppTheme.lightTheme,
       // --- CORREÇÃO 2: Use o tema escuro customizado ---
       darkTheme: AppTheme.darkTheme, 
       themeMode: Provider.of<ThemeProvider>(context).themeMode,
