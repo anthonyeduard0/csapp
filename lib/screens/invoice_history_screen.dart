@@ -1,21 +1,15 @@
-// Arquivo: lib/screens/invoice_history_screen.dart
-// ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso de um pagamento em lote.
-// ATUALIZADO: Gradiente de cores alterado para consistência visual.
-// MODIFICADO: Uso de ApiConfig.baseUrl.
-// CORREÇÃO (HÍBRIDA): Removido FittedBox do título "Mensalidade de..." e aplicado maxLines: 2.
-// CORREÇÃO (HÍBRIDA): Mantido FittedBox para o valor em R$.
-// ATUALIZADO: Fontes levemente aumentadas.
-// ATUALIZADO: Adicionados 'const' para resolver avisos de lint.
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:educsa/screens/payment_screen.dart';
-import 'package:educsa/screens/main_screen.dart';
-import 'package:educsa/api_config.dart'; // Importação adicionada
+import 'package:educsa/screens/main_screen.dart'; // Mantive caso precise do AlunoComMensalidades
+import 'package:educsa/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Necessário para pegar o token
 
 class InvoiceHistoryScreen extends StatefulWidget {
+  // ATENÇÃO: O responsavelCpf não é mais usado na URL, mas pode ser útil manter
+  // para exibição ou lógica interna se necessário.
   final String responsavelCpf;
   const InvoiceHistoryScreen({super.key, required this.responsavelCpf});
   @override
@@ -27,7 +21,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   final Set<String> _selectedInvoiceIds = {};
   double _totalSelecionado = 0.0;
   List<Mensalidade> _allInvoices = [];
-  bool _didPay = false; // --- NOVA VARIÁVEL DE ESTADO ---
+  bool _didPay = false; 
   
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -62,10 +56,26 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   }
 
   Future<List<AlunoComMensalidades>> _fetchInvoiceHistory() async {
-    // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
-    final url = Uri.parse('${ApiConfig.baseUrl}/mensalidades/?cpf=${widget.responsavelCpf}');
+    // --- ATUALIZAÇÃO: Busca Token e Remove CPF da URL ---
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) {
+      throw Exception('Sessão expirada. Faça login novamente.');
+    }
+
+    // A URL agora não recebe mais ?cpf=...
+    final url = Uri.parse('${ApiConfig.baseUrl}/mensalidades/');
+    
     try {
-      final response = await http.get(url);
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token', // Header de Autenticação
+          'Content-Type': 'application/json',
+        },
+      );
+
       if (response.statusCode == 200) {
         List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
         final data = body.map((dynamic item) => AlunoComMensalidades.fromJson(item)).toList();
@@ -73,6 +83,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         _allInvoices.sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
         if (mounted) _fadeController.forward();
         return data;
+      } else if (response.statusCode == 401) {
+        throw Exception('Sessão inválida. Por favor, saia e entre novamente.');
       } else {
         throw Exception('Falha ao carregar o histórico de faturas.');
       }
@@ -82,6 +94,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   }
 
   void _onInvoiceSelected(bool? isSelected, Mensalidade mensalidade) {
+    // Lógica mantida...
     final mensalidadesEmAberto = _allInvoices.where((m) => m.status == 'PENDENTE' || m.status == 'ATRASADA').toList();
     if (isSelected == true) {
       Mensalidade? faturaMaisAntigaNaoSelecionada;
@@ -115,16 +128,30 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
 
   Future<void> _pagarSelecionados(BuildContext context) async {
     if (!mounted) return;
+    
+    // --- ATUALIZAÇÃO: Busca Token para Pagamento em Lote ---
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro de autenticação.')));
+      return;
+    }
+
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
-    // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
     final url = Uri.parse('${ApiConfig.baseUrl}/pagamento/criar-pix-lote/');
+    
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Header de Autenticação
+        },
         body: jsonEncode({'mensalidade_ids': _selectedInvoiceIds.toList()}),
       );
+      
       if (response.statusCode == 201) {
         final pixData = jsonDecode(utf8.decode(response.bodyBytes));
         final result = await navigator.push(MaterialPageRoute(
@@ -135,13 +162,13 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
             initialPixData: pixData,
           ),
         ));
-        // --- ALTERAÇÃO: Se o pagamento foi feito, marca para recarregar ---
+        
         if (result == true) {
-          _didPay = true; // Marca que um pagamento foi feito
+          _didPay = true;
           _refreshData();
         }
       } else {
-        final error = jsonDecode(response.body)['error'];
+        final error = jsonDecode(response.body)['error'] ?? 'Erro desconhecido';
         scaffoldMessenger.showSnackBar(SnackBar(content: Text('Erro: $error'), backgroundColor: Colors.red));
       }
     } catch (e) {
@@ -208,13 +235,13 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
     );
   }
 
+  // --- Widgets de UI mantidos iguais ao original ---
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
       child: Row(
         children: [
           GestureDetector(
-            // --- ALTERAÇÃO: Retorna a variável _didPay ao sair ---
             onTap: () => Navigator.pop(context, _didPay),
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -229,9 +256,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
               children: [
                 FittedBox( 
                   fit: BoxFit.scaleDown,
-                  child: Text('Minhas Faturas', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)) // Fonte aumentada
+                  child: Text('Minhas Faturas', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)) 
                 ),
-                Text('Gerencie seus pagamentos', style: TextStyle(color: Colors.white70, fontSize: 15)), // Fonte aumentada
+                Text('Gerencie seus pagamentos', style: TextStyle(color: Colors.white70, fontSize: 15)), 
               ],
             ),
           ),
@@ -256,8 +283,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         dividerColor: Colors.transparent,
         labelColor: primaryColor,
         unselectedLabelColor: Colors.white,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17), // Fonte aumentada
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 17), // Fonte aumentada
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 17),
         tabs: const [
           Tab(
             child: FittedBox( 
@@ -291,15 +318,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   }
 
   Widget _buildLoadingState() {
-    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor), strokeWidth: 3), SizedBox(height: 16), Text('Carregando faturas...', style: TextStyle(color: Colors.grey, fontSize: 17)), ], ), ); // Fonte aumentada
+    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor), strokeWidth: 3), SizedBox(height: 16), Text('Carregando faturas...', style: TextStyle(color: Colors.grey, fontSize: 17)), ], ), ); 
   }
 
   Widget _buildErrorState(String error) {
-    return Center( child: Container( margin: const EdgeInsets.all(24), padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.shade200)), child: Column( mainAxisSize: MainAxisSize.min, children: [ const Icon(Icons.error_outline_rounded, color: Colors.red, size: 48), const SizedBox(height: 16), Text('Erro: $error', textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700, fontSize: 17)), ], ), ), ); // Fonte aumentada
+    return Center( child: Container( margin: const EdgeInsets.all(24), padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.shade200)), child: Column( mainAxisSize: MainAxisSize.min, children: [ const Icon(Icons.error_outline_rounded, color: Colors.red, size: 48), const SizedBox(height: 16), Text('Erro: $error', textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700, fontSize: 17)), ], ), ), );
   }
   
   Widget _buildEmptyState() {
-    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey), SizedBox(height: 16), Text('Nenhuma fatura encontrada', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w500, color: Colors.grey)), ], ), ); // Fonte aumentada
+    return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey), SizedBox(height: 16), Text('Nenhuma fatura encontrada', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w500, color: Colors.grey)), ], ), );
   }
 
   Map<String, dynamic> _getStatusInfo(String status) {
@@ -329,7 +356,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                     child: Icon(isPending ? Icons.pending_actions_rounded : Icons.check_circle_rounded, size: 48, color: Colors.grey.shade400),
                   ),
                   const SizedBox(height: 16),
-                  Text(isPending ? 'Nenhuma fatura pendente' : 'Nenhuma fatura paga', style: TextStyle(fontSize: 17, color: Colors.grey.shade600, fontWeight: FontWeight.w500)), // Fonte aumentada
+                  Text(isPending ? 'Nenhuma fatura pendente' : 'Nenhuma fatura paga', style: TextStyle(fontSize: 17, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -401,7 +428,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                           Flexible(
                             child: Text(
                               'Mensalidade de $mesFormatado', 
-                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: primaryColor), 
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             )
@@ -414,7 +441,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                           const Icon(Icons.calendar_today_rounded, size: 16, color: Colors.grey),
                           const SizedBox(width: 8),
                           Flexible(
-                            child: Text('Vencimento: ${formatadorVencimento.format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey, fontSize: 15), softWrap: false), // Fonte aumentada
+                            child: Text('Vencimento: ${formatadorVencimento.format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey, fontSize: 15), softWrap: false), 
                           ),
                         ],
                       ),
@@ -428,7 +455,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 formatadorMoeda.format(mensalidade.valorFinal), 
-                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada (base)
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), 
                                 softWrap: false, 
                               )
                             )
@@ -441,7 +468,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                               children: [
                                 Icon(statusInfo['icon'], size: 16, color: statusInfo['color']),
                                 const SizedBox(width: 4),
-                                Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 13)), // Fonte aumentada
+                                Text(statusInfo['text'], style: TextStyle(color: statusInfo['color'], fontWeight: FontWeight.bold, fontSize: 13)),
                               ],
                             ),
                           ),
@@ -475,10 +502,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Flexible(
-                    child: Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 15)), // Fonte aumentada
+                    child: Text('${_selectedInvoiceIds.length} fatura(s) selecionada(s)', style: TextStyle(color: Colors.grey.shade600, fontSize: 15)),
                   ),
                   const SizedBox(height: 4),
-                  Text(NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(_totalSelecionado), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryColor)), // Fonte aumentada
+                  Text(NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(_totalSelecionado), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryColor)),
                 ],
               ),
             ),
@@ -502,7 +529,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                   children: [
                     Icon(Icons.payment_rounded, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Pagar', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)), // Fonte aumentada
+                    Text('Pagar', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)), 
                   ],
                 ),
               ),

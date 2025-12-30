@@ -1,4 +1,3 @@
-
 import 'package:educsa/utils/responsive_layout.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -40,13 +39,19 @@ class _LoginScreenState extends State<LoginScreen> {
     final prefs = await SharedPreferences.getInstance();
     final bool rememberMe = prefs.getBool('remember_me') ?? false;
 
+    // --- LIMPEZA DE SEGURANÇA ---
+    // Removemos qualquer senha antiga que tenha ficado salva por engano
+    if (prefs.containsKey('user_password')) {
+      await prefs.remove('user_password');
+    }
+
     setState(() {
       _rememberMe = rememberMe;
     });
 
     if (rememberMe) {
+      // Carregamos APENAS o CPF. O usuário deve digitar a senha novamente.
       _cpfController.text = prefs.getString('user_cpf') ?? '';
-      _passwordController.text = prefs.getString('user_password') ?? '';
     }
   }
 
@@ -86,18 +91,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final prefs = await SharedPreferences.getInstance();
+        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         
+        // --- SEGURANÇA ATUALIZADA ---
+        // 1. Salvamos o CPF se "Lembrar-me" estiver marcado
         if (_rememberMe) {
           await prefs.setBool('remember_me', true);
           await prefs.setString('user_cpf', cpf);
-          await prefs.setString('user_password', password);
         } else {
           await prefs.setBool('remember_me', false);
           await prefs.remove('user_cpf');
-          await prefs.remove('user_password');
         }
         
-        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        // 2. NUNCA salvamos a senha.
+        await prefs.remove('user_password'); 
+
+        // 3. Salvamos o TOKEN JWT recebido do backend
+        if (responseData['token'] != null) {
+          await prefs.setString('auth_token', responseData['token']);
+        }
         
         if (mounted) { 
           Navigator.pushReplacement(
@@ -157,7 +169,6 @@ class _LoginScreenState extends State<LoginScreen> {
     // Define colors based on the platform
     final Color primaryTextColor = isDesktop ? Colors.black87 : Colors.white;
     final Color secondaryTextColor = isDesktop ? Colors.black54 : Colors.white70;
-    final Color fieldFillColor = isDesktop ? Colors.grey[200]! : const Color(0x33FFFFFF);
     final Color fieldIconColor = isDesktop ? Colors.grey[600]! : Colors.white70;
     final Color buttonBackgroundColor = isDesktop ? const Color(0xFF1E3A8A) : Colors.white;
     final Color buttonForegroundColor = isDesktop ? Colors.white : const Color(0xFF1E3A8A);
@@ -233,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     });
                   },
                   child: Text(
-                    'Lembrar-me',
+                    'Lembrar-me (Apenas CPF)',
                     style: TextStyle(color: secondaryTextColor, fontSize: 16),
                   ),
                 ),
@@ -319,4 +330,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
