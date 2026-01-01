@@ -148,16 +148,22 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    // --- CORREÇÃO DE LAYOUT PARA WEB/MOBILE ---
+    // O Container com o gradiente foi movido para fora do Scaffold.
+    // O Scaffold agora tem um fundo transparente para que o gradiente do Container seja visível.
+    // Isso garante que o gradiente preencha 100% da tela (usando a altura de viewport dinâmica - dvh - definida no index.html)
+    // e não seja redimensionado quando o teclado virtual aparece, corrigindo o espaço em branco no rodapé.
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: ResponsiveLayout(
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: ResponsiveLayout(
           mobileBody: mobileBody,
           desktopBody: desktopBody,
         ),
