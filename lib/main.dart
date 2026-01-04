@@ -2,6 +2,8 @@
 // MODIFICADO: Trocado ThemeData.dark() por AppTheme.darkTheme
 // MODIFICADO: Adicionado 'builder' ao MaterialApp para travar o fator de escala da fonte em 1.0 (ignorando as configurações do sistema).
 
+import 'package:educsa/screens/login_screen_web.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -19,6 +21,18 @@ void main() async {
       child: const MyApp(),
     ),
   );
+}
+
+class ResponsiveLayout extends StatelessWidget {
+  final Widget mobileBody;
+  final Widget webBody;
+
+  const ResponsiveLayout({super.key, required this.mobileBody, required this.webBody});
+
+  @override
+  Widget build(BuildContext context) {
+    return kIsWeb ? webBody : mobileBody;
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -52,7 +66,10 @@ class MyApp extends StatelessWidget {
       },
       // +++ FIM DA SOLUÇÃO (TRAVAR FONTE) +++
 
-      home: const LoginScreen(),
+      home: const ResponsiveLayout(
+        mobileBody: LoginScreen(),
+        webBody: LoginScreenWeb(),
+      ),
       debugShowCheckedModeBanner: false,
     );
   }
