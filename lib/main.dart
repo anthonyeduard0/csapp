@@ -31,7 +31,6 @@ class MyApp extends StatelessWidget {
       // +++ TEMA APLICADO +++
       theme: AppTheme.theme,
       // --- CORREÇÃO 2: Use o tema escuro customizado ---
-      darkTheme: AppTheme.darkTheme, 
       themeMode: Provider.of<ThemeProvider>(context).themeMode,
 
       // +++ INÍCIO DA SOLUÇÃO (TRAVAR FONTE) +++
