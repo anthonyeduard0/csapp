@@ -52,3 +52,5 @@ key.properties
 
 # Local Android properties
 local.properties
+# Firebase Studio / Project IDX configuration
+.idx/
