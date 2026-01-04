@@ -17,30 +17,62 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Colegio Santo Antonio App">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="educsa">
+  <meta name="apple-mobile-web-app-title" content="CSApp">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>educsa</title>
+  <title>CSApp</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- 
+    CORREÇÃO DO BUG (FIX): 
+    1. 'interactive-widget=resizes-content': Força o navegador a redimensionar a viewport 
+       visual quando o teclado abre/fecha, eliminando o espaço em branco fantasma.
+    2. 'maximum-scale=1.0, user-scalable=no': Previne comportamentos de zoom indesejados 
+       que podem desalinhar o layout durante a animação do teclado.
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+
   <style>
+    /* CORREÇÃO ADICIONAL DE CSS:
+      Garante que a raiz e o corpo ocupem exatamente 100% da altura disponível e 
+      previne o 'overscroll' nativo do navegador que pode expor o fundo branco.
+    */
     html, body {
-      height: 100dvh;
+      height: 100%;
+      width: 100%;
       margin: 0;
       padding: 0;
+      overflow: hidden;
+      /* Opcional: Define a cor de fundo para combinar com o tema do app e esconder glitches visuais */
+      background-color: #0175c2; 
     }
   </style>
+
+  <script>
+    // Listener de segurança para garantir o redimensionamento em versões mais antigas do Android/Chrome
+    // caso a meta tag não seja suficiente.
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        // Força um reflow leve se necessário
+        document.body.style.height = window.visualViewport.height + 'px';
+        requestAnimationFrame(() => {
+           document.body.style.height = '100%';
+        });
+      });
+    }
+  </script>
 </head>
 <body>
+  <!-- Carregamento do script principal do Flutter -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
