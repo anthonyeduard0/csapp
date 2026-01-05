@@ -149,6 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -169,7 +170,6 @@ class _LoginScreenState extends State<LoginScreen> {
     // Define colors based on the platform
     final Color primaryTextColor = isDesktop ? Colors.black87 : Colors.white;
     final Color secondaryTextColor = isDesktop ? Colors.black54 : Colors.white70;
-    final Color fieldFillColor = isDesktop ? Colors.grey[200]! : const Color(0x33FFFFFF);
     final Color fieldIconColor = isDesktop ? Colors.grey[600]! : Colors.white70;
     final Color buttonBackgroundColor = isDesktop ? const Color(0xFF1E3A8A) : Colors.white;
     final Color buttonForegroundColor = isDesktop ? Colors.white : const Color(0xFF1E3A8A);
