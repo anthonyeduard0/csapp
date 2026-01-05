@@ -1,16 +1,11 @@
-// Arquivo: lib/screens/payment_screen.dart
-// ATUALIZADO: Retorna 'true' para a tela anterior após o sucesso do pagamento.
-// ATUALIZADO: Gradiente de cores alterado para consistência visual.
-// MODIFICADO: Uso de ApiConfig.baseUrl.
-// CORRIGIDO: Adicionado debugPrint para erro silencioso no _checkPaymentStatus.
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
-import 'package:educsa/api_config.dart'; // Importação adicionada
+import 'package:educsa/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Importação para o Token
 
 class PaymentScreen extends StatefulWidget {
   final String mensalidadeId;
@@ -34,7 +29,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Future<Map<String, dynamic>>? _pixDataFuture;
   Timer? _pollingTimer;
   bool _isPaid = false;
-  // REMOVIDA: final String _backendUrl = 'https://csa-url-app.onrender.com/api';
+  int _checksCount = 0; // --- OTIMIZAÇÃO: Contador para Backoff ---
 
   static const Color primaryColor = Color(0xFF1D449B);
   static const Color accentColor = Color(0xFF25B6E8);
@@ -45,7 +40,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.initState();
     if (widget.initialPixData != null) {
       _pixDataFuture = Future.value(widget.initialPixData);
-       _startPollingForPaymentStatus(); // Inicia a verificação para pagamentos em lote também
+       _startPollingForPaymentStatus();
     } else {
       _pixDataFuture = _gerarPagamentoPixIndividual();
     }
@@ -59,19 +54,40 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   void _startPollingForPaymentStatus() {
     _pollingTimer?.cancel();
-    // Para pagamentos em lote, não fazemos polling individual
     if (widget.mensalidadeId.startsWith('lote_')) return;
     
+    // --- OTIMIZAÇÃO DE POLLING ---
+    // Verifica a cada 5 segundos, mas para após 5 minutos (60 tentativas).
+    _checksCount = 0;
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _checksCount++;
+      if (_checksCount > 60) {
+        timer.cancel(); // Para de verificar automaticamente para poupar o Render
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('Verificação automática pausada. Atualize manualmente se já pagou.')),
+           );
+        }
+        return;
+      }
       _checkPaymentStatus();
     });
   }
 
   Future<void> _checkPaymentStatus() async {
+    // --- ATUALIZAÇÃO: Busca Token ---
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    
+    // Se não tiver token, não faz a requisição (segurança e economia)
+    if (token == null) return;
+
     try {
-      // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/pagamento/status/${widget.mensalidadeId}/'),
+        headers: {
+          'Authorization': 'Bearer $token', // Header de Autenticação
+        },
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -83,18 +99,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
         }
       }
     } catch (e) {
-      // --- CORREÇÃO: Adicionado debugPrint para o erro silencioso ---
-      // Erro silencioso para o usuário, mas visível para o desenvolvedor
       debugPrint("Falha ao checar status do pagamento: $e");
     }
   }
 
   Future<Map<String, dynamic>> _gerarPagamentoPixIndividual() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) throw Exception('Não autenticado.');
+
     try {
-      // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/pagamento/criar-pix/'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Header de Autenticação
+        },
         body: jsonEncode({'mensalidade_id': widget.mensalidadeId}),
       );
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -150,7 +171,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       child: Row(
         children: [
           GestureDetector(
-            // --- ALTERAÇÃO: Retorna 'true' se o pagamento foi confirmado ---
             onTap: () => Navigator.pop(context, _isPaid),
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -199,29 +219,52 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const SizedBox(height: 8),
                 Text( valorFormatado, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryColor), ),
                 const SizedBox(height: 24),
+                
+                // Exibe o QR Code
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], ),
-                  child: Image.memory(base64Decode(qrCodeBase64), width: 220, height: 220),
+                  child: qrCodeBase64 != null 
+                    ? Image.memory(base64Decode(qrCodeBase64), width: 220, height: 220)
+                    : const SizedBox(height: 220, width: 220, child: Center(child: Text("QR Code Imagem Indisponível"))),
                 ),
+                
                 const SizedBox(height: 24),
                 const Text('Ou use o Pix Copia e Cola:', textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration( color: Colors.grey[200], borderRadius: BorderRadius.circular(12), ),
-                  child: Text( qrCodeText, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Colors.black54), ),
+                  child: Text( qrCodeText ?? "Código indisponível", textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Colors.black54), ),
                 ),
                 const SizedBox(height: 24),
+                
+                // Botão de Copiar
                 ElevatedButton.icon(
                   icon: const Icon(Icons.copy_rounded, size: 20),
                   label: const Text('Copiar Código'),
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: qrCodeText));
-                    ScaffoldMessenger.of(context).showSnackBar( SnackBar( content: const Text('Código Pix copiado!'), backgroundColor: primaryColor, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), ), );
+                    if (qrCodeText != null) {
+                      Clipboard.setData(ClipboardData(text: qrCodeText));
+                      ScaffoldMessenger.of(context).showSnackBar( SnackBar( content: const Text('Código Pix copiado!'), backgroundColor: primaryColor, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), ), );
+                    }
                   },
                   style: ElevatedButton.styleFrom( backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), ),
                 ),
+
+                // --- OTIMIZAÇÃO: Botão Manual de Verificação ---
+                if (_checksCount > 60) ...[
+                   const SizedBox(height: 24),
+                   OutlinedButton.icon(
+                     onPressed: _checkPaymentStatus,
+                     icon: const Icon(Icons.refresh_rounded),
+                     label: const Text("Verificar Pagamento Agora"),
+                     style: OutlinedButton.styleFrom(
+                       foregroundColor: primaryColor,
+                       side: const BorderSide(color: primaryColor),
+                     ),
+                   )
+                ]
               ],
             ),
           );
@@ -248,7 +291,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const Text( 'Obrigado! Seu pagamento foi processado com sucesso.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16), ),
           const SizedBox(height: 48),
           ElevatedButton(
-            // --- ALTERAÇÃO: Retorna 'true' ao pressionar o botão de voltar ---
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom( backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), ),
             child: const Text('Voltar para o Início'),
