@@ -151,6 +151,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Container(
+        // CORREÇÃO 1: Força o container a ocupar 100% da tela sempre
+        constraints: const BoxConstraints.expand(),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
@@ -174,124 +176,136 @@ class _LoginScreenState extends State<LoginScreen> {
     final Color buttonBackgroundColor = isDesktop ? const Color(0xFF1E3A8A) : Colors.white;
     final Color buttonForegroundColor = isDesktop ? Colors.white : const Color(0xFF1E3A8A);
 
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          const Image(image: AssetImage('assets/images/Logocsa.png'), height: 120),
-          const SizedBox(height: 20),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              'Seja bem-vindo(a)!',
-              style: TextStyle(color: primaryTextColor, fontSize: 30, fontWeight: FontWeight.bold,),
+    // CORREÇÃO 2: LayoutBuilder para calcular a altura disponível
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(32.0),
+          child: ConstrainedBox(
+            // Define uma altura mínima igual à altura da tela menos o padding
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight > 64 ? constraints.maxHeight - 64 : constraints.maxHeight,
             ),
-          ),
-          const SizedBox(height: 10),
-          Text('Entrar na conta', style: TextStyle(color: secondaryTextColor, fontSize: 17,),),
-          const SizedBox(height: 40),
-          _buildTextField(
-            controller: _cpfController,
-            formatter: _cpfFormatter,
-            hintText: 'CPF',
-            icon: Icons.person_outline,
-            keyboardType: TextInputType.number,
-            isDesktop: isDesktop
-          ),
-          const SizedBox(height: 20),
-          _buildTextField(
-            controller: _passwordController,
-            hintText: 'Senha',
-            icon: Icons.lock_outline,
-            obscureText: !_isPasswordVisible,
-            suffixIcon: IconButton(
-              icon: Icon(
-                _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                color: fieldIconColor,
-              ),
-              onPressed: () { setState(() { _isPasswordVisible = !_isPasswordVisible; }); },
-            ),
-            isDesktop: isDesktop
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.only(left: 12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: _rememberMe,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _rememberMe = value ?? false;
-                      });
-                    },
-                    activeColor: isDesktop ? const Color(0xFF1D449B) : Colors.white,
-                    checkColor: isDesktop ? Colors.white : const Color(0xFF1D449B),
-                    side: BorderSide(color: secondaryTextColor, width: 2),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _rememberMe = !_rememberMe;
-                    });
-                  },
-                  child: Text(
-                    'Lembrar-me (Apenas CPF)',
-                    style: TextStyle(color: secondaryTextColor, fontSize: 16),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _isLoading
-              ? CircularProgressIndicator(color: isDesktop ? const Color(0xFF1E3A8A) : Colors.white)
-              : SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: buttonBackgroundColor,
-                      foregroundColor: buttonForegroundColor,
-                      disabledBackgroundColor: buttonBackgroundColor.withAlpha(128),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30),),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const Image(image: AssetImage('assets/images/Logocsa.png'), height: 120),
+                  const SizedBox(height: 20),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Seja bem-vindo(a)!',
+                      style: TextStyle(color: primaryTextColor, fontSize: 30, fontWeight: FontWeight.bold,),
                     ),
-                    child: const Text('ENTRAR', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,),),
                   ),
-                ),
-          const SizedBox(height: 40),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: TextStyle(color: secondaryTextColor, fontSize: 13),
-              children: [
-                const TextSpan(text: 'Ao entrar, você concorda com nossos ',),
-                TextSpan(
-                  text: 'Termos de Uso',
-                  style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline,),
-                  recognizer: TapGestureRecognizer()..onTap = _launchTermsOfUse,
-                ),
-                const TextSpan(text: ' e '),
-                TextSpan(
-                  text: 'Política de Privacidade.',
-                  style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline,),
-                  recognizer: TapGestureRecognizer()..onTap = _launchPrivacyPolicy,
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  Text('Entrar na conta', style: TextStyle(color: secondaryTextColor, fontSize: 17,),),
+                  const SizedBox(height: 40),
+                  _buildTextField(
+                    controller: _cpfController,
+                    formatter: _cpfFormatter,
+                    hintText: 'CPF',
+                    icon: Icons.person_outline,
+                    keyboardType: TextInputType.number,
+                    isDesktop: isDesktop
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                    controller: _passwordController,
+                    hintText: 'Senha',
+                    icon: Icons.lock_outline,
+                    obscureText: !_isPasswordVisible,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        color: fieldIconColor,
+                      ),
+                      onPressed: () { setState(() { _isPasswordVisible = !_isPasswordVisible; }); },
+                    ),
+                    isDesktop: isDesktop
+                  ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                _rememberMe = value ?? false;
+                              });
+                            },
+                            activeColor: isDesktop ? const Color(0xFF1D449B) : Colors.white,
+                            checkColor: isDesktop ? Colors.white : const Color(0xFF1D449B),
+                            side: BorderSide(color: secondaryTextColor, width: 2),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _rememberMe = !_rememberMe;
+                            });
+                          },
+                          child: Text(
+                            'Lembrar-me (Apenas CPF)',
+                            style: TextStyle(color: secondaryTextColor, fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _isLoading
+                      ? CircularProgressIndicator(color: isDesktop ? const Color(0xFF1E3A8A) : Colors.white)
+                      : SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: buttonBackgroundColor,
+                              foregroundColor: buttonForegroundColor,
+                              disabledBackgroundColor: buttonBackgroundColor.withAlpha(128),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30),),
+                            ),
+                            child: const Text('ENTRAR', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,),),
+                          ),
+                        ),
+                  const SizedBox(height: 40),
+                  RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: TextStyle(color: secondaryTextColor, fontSize: 13),
+                      children: [
+                        const TextSpan(text: 'Ao entrar, você concorda com nossos ',),
+                        TextSpan(
+                          text: 'Termos de Uso',
+                          style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline,),
+                          recognizer: TapGestureRecognizer()..onTap = _launchTermsOfUse,
+                        ),
+                        const TextSpan(text: ' e '),
+                        TextSpan(
+                          text: 'Política de Privacidade.',
+                          style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline,),
+                          recognizer: TapGestureRecognizer()..onTap = _launchPrivacyPolicy,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+        );
+      }
     );
   }
 
