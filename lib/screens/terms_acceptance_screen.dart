@@ -6,10 +6,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart'; // Importação essencial para o Token
 import 'package:educsa/screens/main_screen.dart';
 import 'package:educsa/screens/legal_screen.dart';
 import 'package:flutter/gestures.dart';
-import 'package:educsa/api_config.dart'; // Importação adicionada
+import 'package:educsa/api_config.dart';
 
 class TermsAcceptanceWrapper extends StatelessWidget {
   final Map<String, dynamic> responseData;
@@ -27,6 +28,14 @@ class TermsAcceptanceWrapper extends StatelessWidget {
   }
 }
 
+class _TermsAcceptancePage extends StatefulWidget {
+  final Map<String, dynamic> responseData;
+  const _TermsAcceptancePage({required this.responseData});
+
+  @override
+  State<_TermsAcceptancePage> createState() => _TermsAcceptancePageState();
+}
+
 class _TermsAcceptancePageState extends State<_TermsAcceptancePage> {
   bool _isLoading = false;
   bool _termsAccepted = false;
@@ -36,36 +45,63 @@ class _TermsAcceptancePageState extends State<_TermsAcceptancePage> {
       _isLoading = true;
     });
 
-    final cpf = widget.responseData['cpf'];
-    // --- MODIFICAÇÃO: Uso do ApiConfig.baseUrl ---
-    final url = Uri.parse('${ApiConfig.baseUrl}/aceitar-termos/');
-
     try {
+      // --- 1. Recuperar o Token JWT salvo ---
+      final prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception('Token de autenticação não encontrado. Faça login novamente.');
+      }
+
+      final cpf = widget.responseData['cpf'];
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/aceitar-termos/');
+
+      // --- 2. Enviar a requisição com o Header Authorization ---
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token', // Autenticação corrigida aqui
+        },
         body: jsonEncode({'cpf': cpf}),
       );
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
+        
+        // Atualiza o dado localmente antes de navegar
+        final updatedData = Map<String, dynamic>.from(widget.responseData);
+        updatedData['termos_aceitos'] = true;
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => MainScreen(responseData: widget.responseData),
+            builder: (context) => MainScreen(responseData: updatedData),
           ),
         );
       } else {
+        // Tenta ler a mensagem de erro do backend, se houver
+        String msgErro = 'Erro ao aceitar os termos.';
+        try {
+            final erroJson = jsonDecode(response.body);
+            if (erroJson['error'] != null) {
+                msgErro = erroJson['error'];
+            }
+        } catch (_) {}
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Erro ao aceitar os termos. Tente novamente.')),
+          SnackBar(
+              content: Text('$msgErro (Cód: ${response.statusCode})'),
+              backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro de conexão.')),
+        SnackBar(content: Text('Erro de conexão: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) {
@@ -82,7 +118,6 @@ class _TermsAcceptancePageState extends State<_TermsAcceptancePage> {
 
     if (type == "terms") {
       title = "Termos de Uso";
-      // --- TEXTO SINCRONIZADO ---
       content = '''
 TERMOS DE USO DO APLICATIVO EDUCSA
 
@@ -165,7 +200,6 @@ e) Utilizar a Plataforma para fins comerciais, como publicidade ou spam, sem a a
 ''';
     } else {
       title = "Política de Privacidade";
-      // O texto da política de privacidade permanece o mesmo
       content = '''
 POLÍTICA DE PRIVACIDADE E SEGURANÇA
 
@@ -311,12 +345,4 @@ UTILIZAÇÃO DAS INFORMAÇÕES
       ),
     );
   }
-}
-
-class _TermsAcceptancePage extends StatefulWidget {
-  final Map<String, dynamic> responseData;
-  const _TermsAcceptancePage({required this.responseData});
-
-  @override
-  State<_TermsAcceptancePage> createState() => _TermsAcceptancePageState();
 }
