@@ -55,7 +55,7 @@ class _TermsAcceptancePageState extends State<_TermsAcceptancePage> {
       }
 
       final cpf = widget.responseData['cpf'];
-      final url = Uri.parse('${ApiConfig.baseUrl}/api/aceitar-termos/');
+      final url = Uri.parse('${ApiConfig.baseUrl}/aceitar-termos/');
 
       // --- 2. Enviar a requisição com o Header Authorization ---
       final response = await http.post(
