@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -178,7 +179,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final body = Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -233,6 +234,21 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
       ),
       bottomNavigationBar: _selectedInvoiceIds.isNotEmpty ? _buildPaymentFooter(context) : null,
     );
+
+    // Web: envolve em layout centralizado com largura máxima
+    if (kIsWeb) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF0F4FF),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: body,
+          ),
+        ),
+      );
+    }
+
+    return body;
   }
 
   // --- Widgets de UI mantidos iguais ao original ---

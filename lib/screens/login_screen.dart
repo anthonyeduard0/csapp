@@ -1,4 +1,5 @@
 import 'package:educsa/utils/responsive_layout.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -136,17 +137,144 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     
     final mobileBody = _buildLoginForm(isDesktop: false);
-    
-    final desktopBody = Center(
-      child: SizedBox(
-        width: 400,
-        child: Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: _buildLoginForm(isDesktop: true),
+
+    // +++  WEB: layout split-screen premium +++
+    if (kIsWeb) {
+      return Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= 800) {
+              return Row(
+                children: [
+                  // Left decorative panel
+                  Expanded(
+                    flex: 5,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Background pattern circles
+                          Positioned(
+                            top: -60,
+                            right: -60,
+                            child: Container(
+                              width: 250,
+                              height: 250,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withAlpha(15),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: -80,
+                            left: -40,
+                            child: Container(
+                              width: 300,
+                              height: 300,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withAlpha(10),
+                              ),
+                            ),
+                          ),
+                          // Content
+                          Padding(
+                            padding: const EdgeInsets.all(48),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Image(
+                                  image: AssetImage('assets/images/Logocsa.png'),
+                                  height: 80,
+                                ),
+                                const SizedBox(height: 32),
+                                const Text(
+                                  'EduCSA',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 40,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Portal do Responsável',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w300,
+                                  ),
+                                ),
+                                const SizedBox(height: 48),
+                                _buildFeatureItem(
+                                  Icons.monetization_on_rounded,
+                                  'Acompanhe mensalidades',
+                                  'Visualize faturas e efetue pagamentos via Pix',
+                                ),
+                                const SizedBox(height: 20),
+                                _buildFeatureItem(
+                                  Icons.calendar_today_rounded,
+                                  'Calendário escolar',
+                                  'Fique por dentro dos eventos e datas importantes',
+                                ),
+                                const SizedBox(height: 20),
+                                _buildFeatureItem(
+                                  Icons.school_rounded,
+                                  'Informações dos alunos',
+                                  'Acompanhe o status de matrículas e muito mais',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Right form panel
+                  Expanded(
+                    flex: 4,
+                    child: Container(
+                      color: Colors.white,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 400),
+                          child: Padding(
+                            padding: const EdgeInsets.all(48),
+                            child: _buildLoginForm(isDesktop: true),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+            // Mobile fallback within web
+            return Container(
+              constraints: const BoxConstraints.expand(),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: mobileBody,
+            );
+          },
         ),
-      ),
-    );
+      );
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -162,9 +290,56 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: ResponsiveLayout(
           mobileBody: mobileBody,
-          desktopBody: desktopBody,
+          desktopBody: Center(
+            child: SizedBox(
+              width: 400,
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: _buildLoginForm(isDesktop: true),
+              ),
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFeatureItem(IconData icon, String title, String subtitle) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(30),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -248,15 +423,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _rememberMe = !_rememberMe;
-                            });
-                          },
-                          child: Text(
-                            'Lembrar-me (Apenas CPF)',
-                            style: TextStyle(color: secondaryTextColor, fontSize: 16),
+                        Flexible(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _rememberMe = !_rememberMe;
+                              });
+                            },
+                            child: Text(
+                              'Lembrar-me (Apenas CPF)',
+                              style: TextStyle(color: secondaryTextColor, fontSize: 16),
+                            ),
                           ),
                         ),
                       ],

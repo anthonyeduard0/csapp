@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -132,7 +133,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final content = Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -163,6 +164,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       ),
     );
+
+    // Web: centraliza com largura máxima para o QR Code ficar legivel
+    if (kIsWeb) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF0F4FF),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: content,
+          ),
+        ),
+      );
+    }
+
+    return content;
   }
 
   Widget _buildHeader() {

@@ -5,6 +5,7 @@
 // SINCRONIZADO: Texto dos Termos de Uso atualizado.
 // ATUALIZADO: Adicionados 'const' para resolver avisos de lint.
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/legal_screen.dart'; // Importa a tela de documentos legais
 
@@ -207,7 +208,7 @@ E-mail: csaagrestina@gmail.com
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final content = Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -261,6 +262,21 @@ E-mail: csaagrestina@gmail.com
         ),
       ),
     );
+
+    // Web: centraliza com largura máxima
+    if (kIsWeb) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF0F4FF),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: content,
+          ),
+        ),
+      );
+    }
+
+    return content;
   }
 
   Widget _buildHeader(BuildContext context) {

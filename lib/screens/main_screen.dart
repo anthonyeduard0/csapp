@@ -7,11 +7,13 @@
 // +++ ÚLTIMA CORREÇÃO (BUG) +++
 // Corrigido o 'factory DashboardData.fromJson' para usar o parâmetro 'nomeResponsavel' em vez de 'nomeCompleto'.
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:educsa/screens/profile_screen.dart';
 import 'package:educsa/screens/payment_screen.dart';
 import 'package:educsa/screens/invoice_history_screen.dart';
 import 'package:educsa/screens/calendar_screen.dart';
+import 'package:educsa/web/web_shell.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -169,6 +171,14 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // +++ DETECÇÃO WEB: usa WebShell com sidebar em vez do layout mobile +++
+    if (kIsWeb) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      if (screenWidth >= 800) {
+        return WebShell(responseData: widget.responseData);
+      }
+    }
+
     const Color primaryColor = Color(0xFF1E3A8A);
     return Scaffold(
       body: IndexedStack(
