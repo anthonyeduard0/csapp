@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final mobileBody = _buildLoginForm(isDesktop: false);
     
     final desktopBody = Center(
-      child: Container(
+      child: SizedBox(
         width: 400,
         child: Card(
           elevation: 4,
