@@ -7,9 +7,9 @@ if [ -d "flutter" ]; then
   rm -rf flutter
 fi
 
-# 2. Clone the exact Flutter version matching your local environment (3.32.7) with depth 1
-echo "Cloning Flutter 3.32.7 (shallow clone)..."
-git clone https://github.com/flutter/flutter.git -b 3.32.7 --depth 1
+# 2. Clone the exact Flutter version matching your local environment (3.47.5) with depth 1
+echo "Cloning Flutter 3.47.5 (shallow clone)..."
+git clone https://github.com/flutter/flutter.git -b 3.47.5 --depth 1
 
 # 3. Add Flutter to PATH
 export PATH="$PATH:`pwd`/flutter/bin"
