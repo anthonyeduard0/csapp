@@ -1,4 +1,4 @@
-// lib/web/web_financial_screen.dart
+ // lib/web/web_financial_screen.dart
 // Tela financeira para web: layout de 2 colunas com fatura em destaque.
 
 import 'package:flutter/material.dart';
@@ -32,7 +32,6 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
   static const Color accentColor = Color(0xFF25B6E8);
 
   late DashboardData _dashboardData;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -41,12 +40,10 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
   }
 
   Future<void> _reloadData() async {
-    setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final cpf = prefs.getString('user_cpf');
     final password = prefs.getString('user_password');
     if (cpf == null || password == null) {
-      setState(() => _isLoading = false);
       return;
     }
     try {
@@ -70,8 +67,6 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -212,19 +207,6 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          _isLoading
-              ? const CircularProgressIndicator(color: Colors.white)
-              : IconButton(
-                  onPressed: _reloadData,
-                  icon: const Icon(Icons.refresh_rounded,
-                      color: Colors.white, size: 24),
-                  tooltip: 'Atualizar dados',
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withAlpha(30),
-                    padding: const EdgeInsets.all(12),
-                  ),
-                ),
         ],
       ),
     );
@@ -539,12 +521,6 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
               if (v == true) _reloadData();
             }),
           ),
-          const SizedBox(height: 12),
-          _buildActionButton(
-            icon: Icons.refresh_rounded,
-            label: 'Atualizar dados',
-            onTap: _reloadData,
-          ),
         ],
       ),
     );
@@ -699,7 +675,7 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
   }
 
   Widget _buildSocialIcon(
-      IconData icon, Color color, String label, String url) {
+      FaIconData icon, Color color, String label, String url) {
     return InkWell(
       onTap: () => _launchURL(url),
       borderRadius: BorderRadius.circular(12),

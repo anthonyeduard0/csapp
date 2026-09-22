@@ -562,7 +562,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
     );
   }
 
-  Widget _buildSocialIcon(IconData icon, Color color, String url) {
+  Widget _buildSocialIcon(FaIconData icon, Color color, String url) {
     return InkWell(
       onTap: () => _launchURL(url),
       borderRadius: BorderRadius.circular(30),
