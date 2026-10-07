@@ -184,16 +184,22 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
   }
 
   Widget _buildCalendarPanel() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 16,
-              offset: const Offset(0, 4))
+            color: isDark ? Colors.black.withAlpha(50) : Colors.black.withAlpha(8),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -212,12 +218,12 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                     color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Calendário Escolar',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: primaryColor,
+                  color: isDark ? const Color(0xFF60A5FA) : primaryColor,
                 ),
               ),
             ],
@@ -235,23 +241,34 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
             headerStyle: HeaderStyle(
               formatButtonVisible: false,
               titleCentered: true,
-              titleTextStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: primaryColor),
+              titleTextStyle: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : primaryColor,
+              ),
               leftChevronIcon: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                    color: const Color(0x1A1E3A8A),
-                    borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.chevron_left, color: primaryColor, size: 18),
+                  color: isDark ? const Color(0xFF334155) : const Color(0x1A1E3A8A),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.chevron_left,
+                  color: isDark ? Colors.white : primaryColor,
+                  size: 18,
+                ),
               ),
               rightChevronIcon: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                    color: const Color(0x1A1E3A8A),
-                    borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.chevron_right, color: primaryColor, size: 18),
+                  color: isDark ? const Color(0xFF334155) : const Color(0x1A1E3A8A),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: isDark ? Colors.white : primaryColor,
+                  size: 18,
+                ),
               ),
             ),
             daysOfWeekHeight: 36,
@@ -260,11 +277,14 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                 final title =
                     _capitalize(DateFormat.yMMMM('pt_BR').format(date));
                 return Center(
-                  child: Text(title,
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: primaryColor)),
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : primaryColor,
+                    ),
+                  ),
                 );
               },
               dowBuilder: (context, day) {
@@ -272,11 +292,16 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                 final isWeekend = day.weekday == DateTime.sunday ||
                     day.weekday == DateTime.saturday;
                 return Center(
-                  child: Text(text,
-                      style: TextStyle(
-                          color: isWeekend ? Colors.red : const Color(0xFF475569),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12)),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: isWeekend
+                          ? Colors.red
+                          : (isDark ? Colors.grey.shade400 : const Color(0xFF475569)),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
                 );
               },
               markerBuilder: (context, day, events) {
@@ -294,31 +319,43 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                 return null;
               },
             ),
-            calendarStyle: const CalendarStyle(
+            calendarStyle: CalendarStyle(
               outsideDaysVisible: true,
-              outsideTextStyle: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
-              defaultTextStyle: TextStyle(fontSize: 13),
-              weekendTextStyle: TextStyle(color: Colors.red, fontSize: 13),
+              outsideTextStyle: TextStyle(
+                color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                fontSize: 13,
+              ),
+              defaultTextStyle: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              weekendTextStyle: const TextStyle(color: Colors.red, fontSize: 13),
               todayDecoration: BoxDecoration(
                 color: Colors.transparent,
                 border: Border.fromBorderSide(
-                    BorderSide(color: Colors.black, width: 2.0)),
+                  BorderSide(
+                    color: isDark ? Colors.white70 : Colors.black,
+                    width: 2.0,
+                  ),
+                ),
                 shape: BoxShape.circle,
               ),
-              todayTextStyle: TextStyle(color: Colors.black, fontSize: 13),
-              selectedDecoration: BoxDecoration(
-                gradient:
-                    LinearGradient(colors: [primaryColor, accentColor]),
+              todayTextStyle: TextStyle(
+                color: isDark ? Colors.white : Colors.black,
+                fontSize: 13,
+              ),
+              selectedDecoration: const BoxDecoration(
+                gradient: LinearGradient(colors: [primaryColor, accentColor]),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                      color: Color(0x661E3A8A),
-                      blurRadius: 8,
-                      offset: Offset(0, 4))
+                    color: Color(0x661E3A8A),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
                 ],
               ),
-              selectedTextStyle:
-                  TextStyle(color: Colors.white, fontSize: 13),
+              selectedTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
             ),
           ),
         ],
@@ -327,16 +364,22 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
   }
 
   Widget _buildEventsPanel() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       constraints: const BoxConstraints(minHeight: 300),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 16,
-              offset: const Offset(0, 4))
+            color: isDark ? Colors.black.withAlpha(50) : Colors.black.withAlpha(8),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -362,16 +405,22 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                     _selectedDay != null
                         ? 'Eventos de ${DateFormat('dd/MM/yyyy').format(_selectedDay!)}'
                         : 'Eventos do dia',
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: primaryColor),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, indent: 20, endIndent: 20),
+          Divider(
+            height: 1,
+            indent: 20,
+            endIndent: 20,
+            color: isDark ? Colors.white10 : Colors.grey.shade200,
+          ),
           ValueListenableBuilder<List<Evento>>(
             valueListenable: _selectedEvents,
             builder: (context, value, _) {
@@ -381,13 +430,18 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(Icons.event_busy_rounded,
-                            size: 40, color: Colors.grey.shade300),
+                        Icon(
+                          Icons.event_busy_rounded,
+                          size: 40,
+                          color: isDark ? Colors.grey.shade600 : Colors.grey.shade300,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'Nenhum evento para este dia',
                           style: TextStyle(
-                              fontSize: 14, color: Colors.grey.shade500),
+                            fontSize: 14,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                          ),
                         ),
                       ],
                     ),
@@ -400,7 +454,7 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                 padding: const EdgeInsets.all(16),
                 itemCount: value.length,
                 itemBuilder: (context, index) =>
-                    _buildWebEventCard(value[index]),
+                    _buildWebEventCard(value[index], isDark),
               );
             },
           ),
@@ -409,7 +463,7 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
     );
   }
 
-  Widget _buildWebEventCard(Evento evento) {
+  Widget _buildWebEventCard(Evento evento, [bool isDark = false]) {
     final formatadorHora = DateFormat('HH:mm');
     final String horario;
     if (evento.dataFim != null && evento.dataFim != evento.dataInicio) {
@@ -422,12 +476,17 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade200),
+        color: isDark ? const Color(0xFF0F172A) : Colors.transparent,
+        border: Border.all(
+          color: isDark ? Colors.white12 : Colors.grey.shade200,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: ExpansionTile(
+          iconColor: isDark ? Colors.grey.shade400 : null,
+          collapsedIconColor: isDark ? Colors.grey.shade500 : null,
           leading: Container(
             padding: const EdgeInsets.all(8),
             decoration: const BoxDecoration(
@@ -437,16 +496,22 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
             child: const Icon(Icons.event_note_rounded,
                 color: Colors.white, size: 16),
           ),
-          title: Text(evento.titulo,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: primaryColor)),
-          subtitle: Text(horario,
-              style: const TextStyle(
-                  color: accentColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12)),
+          title: Text(
+            evento.titulo,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: isDark ? Colors.white : primaryColor,
+            ),
+          ),
+          subtitle: Text(
+            horario,
+            style: const TextStyle(
+              color: accentColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
           children: [
             if (evento.descricao != null && evento.descricao!.isNotEmpty)
               Padding(
@@ -456,9 +521,10 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                   child: Text(
                     evento.descricao!,
                     style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                        height: 1.5),
+                      color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ),

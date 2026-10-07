@@ -249,6 +249,7 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
       BuildContext context, Mensalidade? mensalidade) {
     final formatadorMoeda =
         NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (mensalidade == null) {
       return _buildCard(
@@ -258,26 +259,28 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: isDark ? const Color(0xFF064E3B).withAlpha(80) : Colors.green.shade50,
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.verified_user_rounded,
-                  size: 56, color: Colors.green.shade600),
+                  size: 56, color: isDark ? const Color(0xFF4ADE80) : Colors.green.shade600),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Tudo em dia!',
               style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: primaryColor),
+                  color: isDark ? Colors.white : primaryColor),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Nenhuma mensalidade pendente.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey,
+                  fontSize: 16),
             ),
             const SizedBox(height: 24),
             OutlinedButton.icon(
@@ -356,10 +359,10 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
           const SizedBox(height: 8),
           Text(
             'Mensalidade de $mesFormatado',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: primaryColor,
+              color: isDark ? Colors.white : primaryColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -367,10 +370,15 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  primaryColor.withAlpha(12),
-                  accentColor.withAlpha(12)
-                ],
+                colors: isDark
+                    ? [
+                        primaryColor.withAlpha(45),
+                        accentColor.withAlpha(35),
+                      ]
+                    : [
+                        primaryColor.withAlpha(12),
+                        accentColor.withAlpha(12),
+                      ],
               ),
               borderRadius: BorderRadius.circular(16),
             ),
@@ -380,16 +388,19 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Valor',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(
+                          color: isDark ? Colors.grey.shade400 : Colors.grey,
+                          fontSize: 12,
+                        ),
                       ),
                       Text(
                         formatadorMoeda.format(mensalidade.valorFinal),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF334155),
+                          color: isDark ? Colors.white : const Color(0xFF334155),
                         ),
                       ),
                     ],
@@ -398,16 +409,19 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
+                    Text(
                       'Vencimento',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(
+                        color: isDark ? Colors.grey.shade400 : Colors.grey,
+                        fontSize: 12,
+                      ),
                     ),
                     Text(
                       DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF334155),
+                        color: isDark ? Colors.white : const Color(0xFF334155),
                       ),
                     ),
                   ],
@@ -418,14 +432,14 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
           if (mensalidade.status == 'ATRASADA') ...[
             const SizedBox(height: 16),
             _buildDetalheRow('Valor Original',
-                formatadorMoeda.format(mensalidade.valorNominal)),
+                formatadorMoeda.format(mensalidade.valorNominal), isDark),
             const SizedBox(height: 6),
             _buildDetalheRow(
-                'Multa', formatadorMoeda.format(mensalidade.multa)),
+                'Multa', formatadorMoeda.format(mensalidade.multa), isDark),
             const SizedBox(height: 6),
             _buildDetalheRow(
                 'Juros (${mensalidade.diasAtraso} dias)',
-                formatadorMoeda.format(mensalidade.juros)),
+                formatadorMoeda.format(mensalidade.juros), isDark),
           ],
           const SizedBox(height: 24),
           Container(
@@ -480,37 +494,49 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
     );
   }
 
-  Widget _buildDetalheRow(String label, String value) {
+  Widget _buildDetalheRow(String label, String value, [bool isDark = false]) {
     return Row(
       children: [
         Expanded(
-          child: Text(label,
-              style: const TextStyle(color: Colors.black54, fontSize: 14)),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isDark ? Colors.grey.shade400 : Colors.black54,
+              fontSize: 14,
+            ),
+          ),
         ),
-        Text(value,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 14)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildQuickActionsCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return _buildCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Ações Rápidas',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: primaryColor,
+              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
             ),
           ),
           const SizedBox(height: 16),
           _buildActionButton(
             icon: Icons.receipt_long_rounded,
             label: 'Ver todas as faturas',
+            isDark: isDark,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -530,9 +556,10 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    bool isDark = false,
   }) {
     return Material(
-      color: const Color(0xFFF0F4FF),
+      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F4FF),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -541,20 +568,23 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(icon, color: primaryColor, size: 20),
+              Icon(icon, color: isDark ? const Color(0xFF60A5FA) : primaryColor, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: primaryColor,
+                    color: isDark ? Colors.white : primaryColor,
                   ),
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  size: 14, color: Colors.grey),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: isDark ? Colors.grey.shade500 : Colors.grey,
+              ),
             ],
           ),
         ),
@@ -563,16 +593,17 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
   }
 
   Widget _buildAlunosCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return _buildCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Alunos Vinculados',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: primaryColor,
+              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
             ),
           ),
           const SizedBox(height: 12),
@@ -581,21 +612,22 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4FF),
+                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F4FF),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor:
-                            primaryColor.withAlpha(30),
+                        backgroundColor: isDark
+                            ? const Color(0xFF3B82F6).withAlpha(40)
+                            : primaryColor.withAlpha(30),
                         child: Text(
                           aluno.nomeCompleto.isNotEmpty
                               ? aluno.nomeCompleto[0].toUpperCase()
                               : '?',
-                          style: const TextStyle(
-                            color: primaryColor,
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF60A5FA) : primaryColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -608,17 +640,19 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
                           children: [
                             Text(
                               aluno.nomeCompleto,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: primaryColor,
+                                color: isDark ? Colors.white : primaryColor,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               aluno.serieAno,
-                              style: const TextStyle(
-                                  fontSize: 11, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? Colors.grey.shade400 : Colors.grey,
+                              ),
                             ),
                           ],
                         ),
@@ -633,16 +667,17 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
   }
 
   Widget _buildSocialCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return _buildCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Fale Conosco',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: primaryColor,
+              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -654,18 +689,21 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
                 const Color(0xFF25D366),
                 'WhatsApp',
                 'https://wa.me/5581995602150',
+                isDark,
               ),
               _buildSocialIcon(
                 FontAwesomeIcons.instagram,
                 const Color(0xFFE4405F),
                 'Instagram',
                 'https://instagram.com/csa_agrestina20',
+                isDark,
               ),
               _buildSocialIcon(
                 FontAwesomeIcons.facebook,
                 const Color(0xFF1877F2),
                 'Facebook',
                 'https://facebook.com/CsaAgrestina',
+                isDark,
               ),
             ],
           ),
@@ -675,7 +713,7 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
   }
 
   Widget _buildSocialIcon(
-      FaIconData icon, Color color, String label, String url) {
+      FaIconData icon, Color color, String label, String url, [bool isDark = false]) {
     return InkWell(
       onTap: () => _launchURL(url),
       borderRadius: BorderRadius.circular(12),
@@ -691,23 +729,31 @@ class _WebFinancialScreenState extends State<WebFinancialScreen> {
             child: FaIcon(icon, color: color, size: 22),
           ),
           const SizedBox(height: 6),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildCard({required Widget child}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
+            color: isDark ? Colors.black.withAlpha(50) : Colors.black.withAlpha(8),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),

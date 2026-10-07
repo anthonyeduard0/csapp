@@ -35,6 +35,8 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: LayoutBuilder(
@@ -51,9 +53,9 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
                 Expanded(
                   child: Column(
                     children: [
-                      _buildAlunosSection(),
+                      _buildAlunosSection(isDark),
                       const SizedBox(height: 20),
-                      _buildOptionsSection(context),
+                      _buildOptionsSection(context, isDark),
                       const SizedBox(height: 20),
                       _buildVersionBadge(),
                     ],
@@ -66,9 +68,9 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
               children: [
                 _buildProfileCard(),
                 const SizedBox(height: 20),
-                _buildAlunosSection(),
+                _buildAlunosSection(isDark),
                 const SizedBox(height: 20),
-                _buildOptionsSection(context),
+                _buildOptionsSection(context, isDark),
                 const SizedBox(height: 20),
                 _buildVersionBadge(),
               ],
@@ -168,26 +170,29 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     );
   }
 
-  Widget _buildAlunosSection() {
+  Widget _buildAlunosSection(bool isDark) {
     return _buildSection(
+      isDark: isDark,
       title: 'Alunos Vinculados',
       icon: Icons.school_rounded,
       child: Column(
         children: _dashboardData.alunos
-            .map((aluno) => _buildAlunoCard(aluno))
+            .map((aluno) => _buildAlunoCard(aluno, isDark))
             .toList(),
       ),
     );
   }
 
-  Widget _buildAlunoCard(Aluno aluno) {
+  Widget _buildAlunoCard(Aluno aluno, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? Colors.white12 : Colors.grey.shade200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,13 +201,15 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: primaryColor.withAlpha(20),
+                backgroundColor: isDark
+                    ? const Color(0xFF3B82F6).withAlpha(40)
+                    : primaryColor.withAlpha(20),
                 child: Text(
                   aluno.nomeCompleto.isNotEmpty
                       ? aluno.nomeCompleto[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(
-                    color: primaryColor,
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF60A5FA) : primaryColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -212,10 +219,10 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
               Expanded(
                 child: Text(
                   aluno.nomeCompleto,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: primaryColor,
+                    color: isDark ? Colors.white : primaryColor,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -223,51 +230,61 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(height: 1),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white10 : Colors.grey.shade200,
+          ),
           const SizedBox(height: 12),
-          _buildInfoRow(Icons.class_rounded, 'Série/Ano', aluno.serieAno),
+          _buildInfoRow(Icons.class_rounded, 'Série/Ano', aluno.serieAno, isDark),
           const SizedBox(height: 8),
           _buildInfoRow(
             Icons.check_circle_rounded,
             'Status',
             aluno.statusMatricula,
-            valueColor: Colors.green.shade700,
+            isDark,
+            valueColor: isDark ? const Color(0xFF4ADE80) : Colors.green.shade700,
           ),
           const SizedBox(height: 8),
           _buildInfoRow(
             Icons.event_available_rounded,
             'Validade',
             aluno.validadeMatriculaFormatada ?? 'N/A',
+            isDark,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value,
+  Widget _buildInfoRow(IconData icon, String label, String value, bool isDark,
       {Color? valueColor}) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey.shade400, size: 16),
+        Icon(icon, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, size: 16),
         const SizedBox(width: 8),
-        Text(label,
-            style:
-                TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+        Text(
+          label,
+          style: TextStyle(
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+            fontSize: 13,
+          ),
+        ),
         const Spacer(),
         Text(
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 13,
-            color: valueColor ?? Colors.black87,
+            color: valueColor ?? (isDark ? Colors.white : Colors.black87),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildOptionsSection(BuildContext context) {
+  Widget _buildOptionsSection(BuildContext context, bool isDark) {
     return _buildSection(
+      isDark: isDark,
       title: 'Opções',
       icon: Icons.settings_rounded,
       child: Column(
@@ -276,7 +293,8 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
             context: context,
             icon: Icons.settings_rounded,
             title: 'Configurações',
-            subtitle: 'Termos de uso e privacidade',
+            subtitle: 'Tema claro/escuro, termos e privacidade',
+            isDark: isDark,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -290,6 +308,7 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
             title: 'Sair',
             subtitle: 'Encerrar sua sessão atual',
             color: Colors.red.shade700,
+            isDark: isDark,
             onTap: () async {
               final navigator = Navigator.of(context);
               final prefs = await SharedPreferences.getInstance();
@@ -315,12 +334,15 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     required String subtitle,
     VoidCallback? onTap,
     Color? color,
+    bool isDark = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? Colors.white12 : Colors.grey.shade200,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -331,26 +353,39 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(icon, color: color ?? primaryColor, size: 20),
+                Icon(
+                  icon,
+                  color: color ?? (isDark ? const Color(0xFF60A5FA) : primaryColor),
+                  size: 20,
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title,
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: color ?? Colors.black87)),
-                      Text(subtitle,
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600)),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: color ?? (isDark ? Colors.white : Colors.black87),
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded,
-                    color: Colors.grey.shade400, size: 14),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                  size: 14,
+                ),
               ],
             ),
           ),
@@ -363,17 +398,22 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     required String title,
     required IconData icon,
     required Widget child,
+    bool isDark = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 16,
-              offset: const Offset(0, 4))
+            color: isDark ? Colors.black.withAlpha(50) : Colors.black.withAlpha(8),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -381,14 +421,18 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, color: primaryColor, size: 18),
+              Icon(
+                icon,
+                color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: primaryColor,
+                  color: isDark ? const Color(0xFF60A5FA) : primaryColor,
                 ),
               ),
             ],

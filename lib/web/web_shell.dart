@@ -2,6 +2,8 @@
 // Layout principal da interface web: sidebar lateral fixa + área de conteúdo.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:educsa/providers/theme_provider.dart';
 import 'package:educsa/screens/main_screen.dart';
 import 'web_financial_screen.dart';
 import 'web_calendar_screen.dart';
@@ -35,29 +37,33 @@ class _WebShellState extends State<WebShell> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF0F4FF),
       body: Row(
         children: [
-          _buildSidebar(),
+          _buildSidebar(isDark),
           Expanded(
-            child: _buildContentArea(),
+            child: _buildContentArea(isDark),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSidebar() {
+  Widget _buildSidebar(bool isDark) {
     return Container(
       width: 240,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [primaryColor, Color(0xFF1A3580), Color(0xFF152D6E)],
+          colors: isDark
+              ? const [Color(0xFF0F172A), Color(0xFF111827), Color(0xFF0B0F19)]
+              : const [primaryColor, Color(0xFF1A3580), Color(0xFF152D6E)],
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Color(0x40000000),
             blurRadius: 20,
@@ -271,10 +277,10 @@ class _WebShellState extends State<WebShell> {
     );
   }
 
-  Widget _buildContentArea() {
+  Widget _buildContentArea(bool isDark) {
     return Column(
       children: [
-        _buildTopBar(),
+        _buildTopBar(isDark),
         Expanded(
           child: IndexedStack(
             index: _selectedIndex,
@@ -295,7 +301,7 @@ class _WebShellState extends State<WebShell> {
     );
   }
 
-  Widget _buildTopBar() {
+  Widget _buildTopBar(bool isDark) {
     final pageTitles = ['Financeiro', 'Calendário Escolar', 'Perfil'];
     final pageSubtitles = [
       'Gerencie suas mensalidades',
@@ -307,10 +313,16 @@ class _WebShellState extends State<WebShell> {
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? Colors.white10 : Colors.black.withAlpha(8),
+            width: 1,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: Colors.black.withAlpha(isDark ? 25 : 10),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -324,17 +336,17 @@ class _WebShellState extends State<WebShell> {
             children: [
               Text(
                 pageTitles[_selectedIndex],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1D449B),
+                  color: isDark ? Colors.white : const Color(0xFF1D449B),
                 ),
               ),
               Text(
                 pageSubtitles[_selectedIndex],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey,
                 ),
               ),
             ],
@@ -343,7 +355,7 @@ class _WebShellState extends State<WebShell> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F4FF),
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFF0F4FF),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Row(
@@ -366,28 +378,65 @@ class _WebShellState extends State<WebShell> {
                 const SizedBox(width: 8),
                 Text(
                   'Olá, ${_dashboardData.nomeResponsavel.split(' ').first}!',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF1D449B),
+                    color: isDark ? Colors.white : const Color(0xFF1D449B),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 12),
+          // Botão de alternância rápida de tema
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              final isThemeDark = themeProvider.isDarkMode;
+              return Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFF0F4FF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Tooltip(
+                  message: isThemeDark
+                      ? 'Alternar para tema claro'
+                      : 'Alternar para tema escuro',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => themeProvider.toggleTheme(!isThemeDark),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          isThemeDark
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
+                          color: isThemeDark
+                              ? const Color(0xFFF59E0B)
+                              : const Color(0xFF1D449B),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 12),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F4FF),
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFF0F4FF),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Tooltip(
               message: 'Versão 1.0.1',
               child: Container(
                 padding: const EdgeInsets.all(8),
-                child: const Icon(
+                child: Icon(
                   Icons.info_outline_rounded,
-                  color: Color(0xFF1D449B),
+                  color: isDark ? Colors.white70 : const Color(0xFF1D449B),
                   size: 20,
                 ),
               ),

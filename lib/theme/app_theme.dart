@@ -13,6 +13,14 @@ class AppTheme {
   static const Color textPrimaryLight = Color(0xFF111827);
   static const Color textSecondaryLight = Color(0xFF6B7280);
 
+  // --- Cores Escuras ---
+  static const Color primaryDark = Color(0xFF3B82F6);
+  static const Color accentDark = Color(0xFFA78BFA);
+  static const Color backgroundDark = Color(0xFF0F172A); // Slate 900
+  static const Color cardBackgroundDark = Color(0xFF1E293B); // Slate 800
+  static const Color textPrimaryDark = Color(0xFFF8FAFC);
+  static const Color textSecondaryDark = Color(0xFF94A3B8);
+
   // --- Tema Claro ---
   static ThemeData get theme {
     return ThemeData(
@@ -80,6 +88,76 @@ class AppTheme {
         indicator: UnderlineTabIndicator(
           borderSide: BorderSide(
             color: Colors.white,
+            width: 3.0,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Tema Escuro ---
+  static ThemeData get darkTheme {
+    return ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: primaryDark,
+      scaffoldBackgroundColor: backgroundDark,
+      cardColor: cardBackgroundDark,
+      colorScheme: const ColorScheme.dark(
+        primary: primaryDark,
+        secondary: accentDark,
+        surface: cardBackgroundDark,
+        onPrimary: Colors.white,
+        onSurface: textPrimaryDark,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: cardBackgroundDark,
+        foregroundColor: textPrimaryDark,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: textPrimaryDark,
+          inherit: false,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: cardBackgroundDark,
+        elevation: 2,
+        margin: const EdgeInsets.only(bottom: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        shadowColor: Colors.black.withAlpha(50),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: cardBackgroundDark,
+        selectedItemColor: primaryDark,
+        unselectedItemColor: textSecondaryDark,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8.0,
+        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryDark,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      tabBarTheme: const TabBarThemeData(
+        labelColor: primaryDark,
+        unselectedLabelColor: textSecondaryDark,
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(
+            color: primaryDark,
             width: 3.0,
           ),
         ),

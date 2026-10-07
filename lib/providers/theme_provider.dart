@@ -5,6 +5,7 @@ class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
 
   ThemeMode get themeMode => _themeMode;
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
 
   ThemeProvider() {
     _loadThemeMode();
@@ -23,6 +24,19 @@ class ThemeProvider extends ChangeNotifier {
     _themeMode = isOn ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isDarkMode', isOn);
+    await prefs.setBool('isDarkMode', isOn);
+  }
+
+  void setDarkMode(bool isDark) => toggleTheme(isDark);
+
+  void setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (mode == ThemeMode.system) {
+      await prefs.remove('isDarkMode');
+    } else {
+      await prefs.setBool('isDarkMode', mode == ThemeMode.dark);
+    }
   }
 }

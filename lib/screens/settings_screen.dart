@@ -7,6 +7,8 @@
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:educsa/providers/theme_provider.dart';
 import 'package:educsa/screens/legal_screen.dart'; // Importa a tela de documentos legais
 
 class SettingsScreen extends StatelessWidget {
@@ -208,13 +210,19 @@ E-mail: csaagrestina@gmail.com
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final content = Scaffold(
+      backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [ primaryColor, accentColor ],
+            colors: isDark
+                ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+                : const [primaryColor, accentColor],
           ),
         ),
         child: SafeArea(
@@ -224,9 +232,9 @@ E-mail: csaagrestina@gmail.com
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: backgroundColor,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : backgroundColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
                     ),
@@ -236,17 +244,30 @@ E-mail: csaagrestina@gmail.com
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- SEÇÃO DE NOTIFICAÇÕES REMOVIDA ---
-                        
-                        const Text("Legal", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+                        // --- SEÇÃO DE TEMA (APENAS NA WEB) ---
+                        if (kIsWeb) ...[
+                          _buildThemeSection(context, themeProvider, isDark),
+                          const SizedBox(height: 28),
+                        ],
+
+                        Text(
+                          "Legal",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         _buildOptionTile(
+                          isDark: isDark,
                           icon: Icons.description_rounded,
                           title: 'Termos de Uso',
                           subtitle: 'Leia os termos de serviço',
                           onTap: () => _showLegalScreen(context, "terms"),
                         ),
                         _buildOptionTile(
+                          isDark: isDark,
                           icon: Icons.privacy_tip_rounded,
                           title: 'Políticas de Privacidade',
                           subtitle: 'Entenda como usamos seus dados',
@@ -266,7 +287,7 @@ E-mail: csaagrestina@gmail.com
     // Web: centraliza com largura máxima
     if (kIsWeb) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF0F4FF),
+        backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF0F4FF),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
@@ -279,6 +300,282 @@ E-mail: csaagrestina@gmail.com
     return content;
   }
 
+  Widget _buildThemeSection(BuildContext context, ThemeProvider themeProvider, bool isDark) {
+    final isDarkMode = themeProvider.isDarkMode;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.palette_rounded,
+              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "Aparência",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : primaryColor.withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Web',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "Personalize a exibição do EduCSA alternando entre tema claro e escuro.",
+          style: TextStyle(
+            fontSize: 13,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Cards de seleção de tema (Claro / Escuro)
+        Row(
+          children: [
+            // Opção Tema Claro
+            Expanded(
+              child: _buildThemeSelectionCard(
+                isSelected: !isDarkMode,
+                title: "Tema Claro",
+                subtitle: "Padrão iluminado",
+                icon: Icons.light_mode_rounded,
+                accentColor: const Color(0xFFF59E0B),
+                isDark: isDark,
+                onTap: () {
+                  if (isDarkMode) {
+                    themeProvider.toggleTheme(false);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Opção Tema Escuro
+            Expanded(
+              child: _buildThemeSelectionCard(
+                isSelected: isDarkMode,
+                title: "Tema Escuro",
+                subtitle: "Tons escuros suaves",
+                icon: Icons.dark_mode_rounded,
+                accentColor: const Color(0xFF8B5CF6),
+                isDark: isDark,
+                onTap: () {
+                  if (!isDarkMode) {
+                    themeProvider.toggleTheme(true);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Tile de alternância rápida
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? Colors.white12 : Colors.grey.shade200,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark ? Colors.black.withAlpha(50) : const Color(0x10000000),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? const Color(0xFF8B5CF6).withAlpha(30)
+                      : const Color(0xFFF59E0B).withAlpha(30),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  isDarkMode ? Icons.nightlight_round : Icons.wb_sunny_rounded,
+                  color: isDarkMode
+                      ? const Color(0xFFA78BFA)
+                      : const Color(0xFFD97706),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isDarkMode ? "Modo Escuro Ativo" : "Modo Claro Ativo",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      isDarkMode
+                          ? "Interface adaptada para ambientes escuros"
+                          : "Interface clara com alto contraste",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: isDarkMode,
+                activeThumbColor: const Color(0xFF3B82F6),
+                activeTrackColor: const Color(0xFF1D449B),
+                onChanged: (value) {
+                  themeProvider.toggleTheme(value);
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThemeSelectionCard({
+    required bool isSelected,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color accentColor,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final activeBorderColor = isDark ? const Color(0xFF60A5FA) : primaryColor;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark
+                    ? const Color(0xFF1E293B)
+                    : primaryColor.withAlpha(12))
+                : (isDark ? const Color(0xFF1E293B).withAlpha(120) : Colors.white),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? activeBorderColor
+                  : (isDark ? Colors.white12 : Colors.grey.shade200),
+              width: isSelected ? 2.0 : 1.0,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: activeBorderColor.withAlpha(40),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: isDark
+                          ? Colors.black.withAlpha(40)
+                          : const Color(0x0D000000),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: accentColor.withAlpha(25),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: accentColor, size: 22),
+                  ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected ? activeBorderColor : Colors.transparent,
+                      border: Border.all(
+                        color: isSelected
+                            ? activeBorderColor
+                            : (isDark ? Colors.white30 : Colors.grey.shade400),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.check,
+                      size: 12,
+                      color: isSelected ? Colors.white : Colors.transparent,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
@@ -288,8 +585,15 @@ E-mail: csaagrestina@gmail.com
             onTap: () => Navigator.pop(context),
             child: Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: const Color(0x33FFFFFF), borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+              decoration: BoxDecoration(
+                color: const Color(0x33FFFFFF),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -297,8 +601,18 @@ E-mail: csaagrestina@gmail.com
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Configurações', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                Text('Ajustes e informações', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Text(
+                  'Configurações',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Ajustes e informações',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
               ],
             ),
           ),
@@ -307,13 +621,26 @@ E-mail: csaagrestina@gmail.com
     );
   }
 
-  Widget _buildOptionTile({required IconData icon, required String title, required String subtitle, VoidCallback? onTap, Color? color}) {
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    VoidCallback? onTap,
+    Color? color,
+    bool isDark = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 10)], // Aviso de const literal
+        border: isDark ? Border.all(color: Colors.white12) : null,
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withAlpha(40) : const Color(0x1A000000),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -324,18 +651,39 @@ E-mail: csaagrestina@gmail.com
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Icon(icon, color: color ?? primaryColor, size: 24),
+                Icon(
+                  icon,
+                  color: color ?? (isDark ? const Color(0xFF60A5FA) : primaryColor),
+                  size: 24,
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color ?? Colors.black87)),
-                      Text(subtitle, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: color ?? (isDark ? Colors.white : Colors.black87),
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16), // Aviso de const
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: isDark ? Colors.grey.shade500 : Colors.grey,
+                  size: 16,
+                ),
               ],
             ),
           ),
