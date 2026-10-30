@@ -161,7 +161,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         body: jsonEncode({'mensalidade_ids': _selectedInvoiceIds.toList()}),
       );
       
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final pixData = jsonDecode(utf8.decode(response.bodyBytes));
         final result = await navigator.push(MaterialPageRoute(
           builder: (context) => PaymentScreen(
@@ -1073,6 +1073,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -1091,6 +1092,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         ],
       ),
       child: Center(
+        heightFactor: 1.0,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
           child: Row(
