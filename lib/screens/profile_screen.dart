@@ -78,13 +78,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : backgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [ primaryColor, accentColor ],
+            colors: isDark
+                ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+                : const [primaryColor, accentColor],
           ),
         ),
         child: SafeArea(
@@ -94,29 +99,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: backgroundColor,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : backgroundColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
                     ),
                   ),
                   child: RefreshIndicator(
                     onRefresh: _reloadData,
-                    color: primaryColor,
+                    color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                    backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 100.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Alunos Vinculados", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: primaryColor)), // Fonte aumentada
+                          Text(
+                            "Alunos Vinculados",
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                            ),
+                          ), // Fonte aumentada
                           const SizedBox(height: 16),
-                          ..._dashboardData.alunos.map((aluno) => _buildAlunoCard(aluno)),
+                          ..._dashboardData.alunos.map((aluno) => _buildAlunoCard(aluno, isDark)),
                           const SizedBox(height: 24),
-                          const Text("Opções", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: primaryColor)), // Fonte aumentada
+                          Text(
+                            "Opções",
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                            ),
+                          ), // Fonte aumentada
                           const SizedBox(height: 16),
                           _buildOptionTile(
+                            isDark: isDark,
                             icon: Icons.settings_rounded,
                             title: 'Configurações',
                             subtitle: 'Ajustes do aplicativo',
@@ -127,10 +148,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             }
                           ),
                           _buildOptionTile(
+                            isDark: isDark,
                             icon: Icons.logout_rounded,
                             title: 'Sair do Aplicativo',
                             subtitle: 'Encerrar sua sessão atual',
-                            color: Colors.red.shade700,
+                            color: isDark ? const Color(0xFFF87171) : Colors.red.shade700,
                             onTap: () async {
                               final navigator = Navigator.of(context);
                               
@@ -147,7 +169,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             }
                           ),
                           const SizedBox(height: 24),
-                          const Center(child: Text('Versão do Aplicativo 1.0.1', style: TextStyle(color: Colors.grey, fontSize: 13))), // Fonte aumentada
+                          Center(
+                            child: Text(
+                              'Versão do Aplicativo 1.0.1',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF64748B) : Colors.grey,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ), // Fonte aumentada
                         ],
                       ),
                     ),
@@ -213,46 +243,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAlunoCard(Aluno aluno) {
+  Widget _buildAlunoCard(Aluno aluno, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)],
+        border: isDark ? Border.all(color: Colors.white10) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 50 : 12),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             aluno.nomeCompleto, 
-            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : primaryColor,
+            ), // Fonte aumentada
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const Divider(height: 24),
-          _buildInfoRow(Icons.school_rounded, 'Série/Ano', aluno.serieAno),
+          Divider(
+            height: 24,
+            color: isDark ? Colors.white10 : Colors.grey.shade200,
+          ),
+          _buildInfoRow(Icons.school_rounded, 'Série/Ano', aluno.serieAno, isDark),
           const SizedBox(height: 12),
-          _buildInfoRow(Icons.check_circle_rounded, 'Status da Matrícula', aluno.statusMatricula, valueColor: Colors.green.shade700),
+          _buildInfoRow(
+            Icons.check_circle_rounded,
+            'Status da Matrícula',
+            aluno.statusMatricula,
+            isDark,
+            valueColor: isDark ? const Color(0xFF4ADE80) : Colors.green.shade700,
+          ),
           const SizedBox(height: 12),
-          _buildInfoRow(Icons.event_available_rounded, 'Validade', aluno.validadeMatriculaFormatada ?? 'N/A'),
+          _buildInfoRow(
+            Icons.event_available_rounded,
+            'Validade',
+            aluno.validadeMatriculaFormatada ?? 'N/A',
+            isDark,
+          ),
         ],
       ),
     );
   }
 
   // +++ INÍCIO DA CORREÇÃO (Alinhamento) +++
-  Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
+  Widget _buildInfoRow(IconData icon, String label, String value, bool isDark, {Color? valueColor}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start, 
       children: [
-        Icon(icon, color: Colors.grey.shade400, size: 20),
+        Icon(
+          icon,
+          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
+          size: 20,
+        ),
         const SizedBox(width: 12),
         // Rótulo (ocupa espaço natural)
         Text(
           label, 
-          style: TextStyle(color: Colors.grey.shade700, fontSize: 15), // Fonte aumentada
+          style: TextStyle(
+            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700,
+            fontSize: 15,
+          ), // Fonte aumentada
         ),
         const SizedBox(width: 16), 
         // Valor (ocupa o resto do espaço e alinha à direita)
@@ -262,7 +323,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: valueColor ?? Colors.black87), // Fonte aumentada
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: valueColor ?? (isDark ? Colors.white : Colors.black87),
+              ), // Fonte aumentada
               maxLines: 2, 
               overflow: TextOverflow.ellipsis, 
             ),
@@ -274,13 +339,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // +++ FIM DA CORREÇÃO (Alinhamento) +++
 
 
-  Widget _buildOptionTile({required IconData icon, required String title, required String subtitle, VoidCallback? onTap, Color? color}) {
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    VoidCallback? onTap,
+    Color? color,
+    bool isDark = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)],
+        border: isDark ? Border.all(color: Colors.white10) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 50 : 12),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -291,18 +369,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Icon(icon, color: color ?? primaryColor, size: 24),
+                Icon(
+                  icon,
+                  color: color ?? (isDark ? const Color(0xFF60A5FA) : primaryColor),
+                  size: 24,
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: color ?? Colors.black87)), // Fonte aumentada
-                      Text(subtitle, style: TextStyle(fontSize: 15, color: Colors.grey.shade600)), // Fonte aumentada
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: color ?? (isDark ? Colors.white : Colors.black87),
+                        ),
+                      ), // Fonte aumentada
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                        ),
+                      ), // Fonte aumentada
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 16),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
+                  size: 16,
+                ),
               ],
             ),
           ),

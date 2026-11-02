@@ -22,6 +22,8 @@ class AppTheme {
   static const Color textSecondaryDark = Color(0xFF94A3B8);
 
   // --- Tema Claro ---
+  static ThemeData get lightTheme => theme;
+
   static ThemeData get theme {
     return ThemeData(
       brightness: Brightness.light,

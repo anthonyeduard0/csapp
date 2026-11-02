@@ -179,15 +179,27 @@ class _MainScreenState extends State<MainScreen> {
       }
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color primaryColor = Color(0xFF1E3A8A);
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       body: IndexedStack(
         index: _selectedIndex,
         children: _pages,
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          boxShadow: [ BoxShadow( color: Colors.black.withAlpha(26), blurRadius: 8, offset: const Offset(0, -2), ), ],
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          border: isDark
+              ? const Border(top: BorderSide(color: Colors.white10, width: 1))
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(isDark ? 60 : 26),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
         child: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
@@ -196,11 +208,11 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem( icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Perfil', ),
           ],
           currentIndex: _selectedIndex,
-          selectedItemColor: primaryColor,
-          unselectedItemColor: Colors.grey[600],
+          selectedItemColor: isDark ? const Color(0xFF60A5FA) : primaryColor,
+          unselectedItemColor: isDark ? const Color(0xFF94A3B8) : Colors.grey[600],
           onTap: _onItemTapped,
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           iconSize: 26,
           selectedFontSize: 15, // Fonte aumentada
           unselectedFontSize: 13, // Fonte aumentada
@@ -275,16 +287,20 @@ class _FinancialScreenState extends State<FinancialScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color primaryColor = Color(0xFF1E3A8A);
     const Color backgroundColor = Color(0xFFF8FAFC);
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : backgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
+            colors: isDark
+                ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+                : const [Color(0xFF1D449B), Color(0xFF25B6E8)],
           ),
         ),
         child: SafeArea(
@@ -314,9 +330,9 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   Expanded(
                     child: Container(
                       width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: backgroundColor,
-                        borderRadius: BorderRadius.only(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A) : backgroundColor,
+                        borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(30),
                           topRight: Radius.circular(30),
                         ),
@@ -324,15 +340,16 @@ class _FinancialScreenState extends State<FinancialScreen> {
                       child: RefreshIndicator(
                         key: _refreshIndicatorKey,
                         onRefresh: reloadData,
-                        color: primaryColor,
+                        color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                         child: SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(24.0),
                           child: Column( 
                             children: [
-                              _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel),
+                              _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, isDark),
                               const SizedBox(height: 24), 
-                              _buildSocialMediaIcons(), 
+                              _buildSocialMediaIcons(isDark), 
                             ],
                           ),
                         ),
@@ -382,17 +399,51 @@ class _FinancialScreenState extends State<FinancialScreen> {
     );
   }
 
-  Map<String, dynamic> _getStatusInfo(String status) {
+  Map<String, dynamic> _getStatusInfo(String status, bool isDark) {
     switch (status) {
-      case 'PAGA': return {'text': 'PAGO', 'color': Colors.green.shade800, 'bgColor': Colors.green.shade100, 'icon': Icons.check_circle_rounded};
-      case 'ATRASADA': return {'text': 'EM ATRASO', 'color': Colors.red.shade800, 'bgColor': Colors.red.shade100, 'icon': Icons.warning_rounded};
-      case 'PENDENTE': return {'text': 'PENDENTE', 'color': Colors.orange.shade800, 'bgColor': Colors.orange.shade100, 'icon': Icons.schedule_rounded};
-      case 'CANCELADA': return {'text': 'CANCELADA', 'color': Colors.grey.shade700, 'bgColor': Colors.grey.shade300, 'icon': Icons.cancel_rounded};
-      default: return {'text': status, 'color': Colors.black, 'bgColor': Colors.grey.shade200, 'icon': Icons.help_outline_rounded};
+      case 'PAGA':
+        final color = isDark ? const Color(0xFF4ADE80) : Colors.green.shade800;
+        return {
+          'text': 'PAGO',
+          'color': color,
+          'bgColor': isDark ? color.withAlpha(45) : Colors.green.shade100,
+          'icon': Icons.check_circle_rounded,
+        };
+      case 'ATRASADA':
+        final color = isDark ? const Color(0xFFF87171) : Colors.red.shade800;
+        return {
+          'text': 'EM ATRASO',
+          'color': color,
+          'bgColor': isDark ? color.withAlpha(45) : Colors.red.shade100,
+          'icon': Icons.warning_rounded,
+        };
+      case 'PENDENTE':
+        final color = isDark ? const Color(0xFFFBBF24) : Colors.orange.shade800;
+        return {
+          'text': 'PENDENTE',
+          'color': color,
+          'bgColor': isDark ? color.withAlpha(45) : Colors.orange.shade100,
+          'icon': Icons.schedule_rounded,
+        };
+      case 'CANCELADA':
+        final color = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700;
+        return {
+          'text': 'CANCELADA',
+          'color': color,
+          'bgColor': isDark ? color.withAlpha(45) : Colors.grey.shade300,
+          'icon': Icons.cancel_rounded,
+        };
+      default:
+        return {
+          'text': status,
+          'color': isDark ? Colors.white70 : Colors.black,
+          'bgColor': isDark ? Colors.white10 : Colors.grey.shade200,
+          'icon': Icons.help_outline_rounded,
+        };
     }
   }
 
-  Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf) {
+  Widget _buildFaturaCard(BuildContext context, Mensalidade? mensalidade, String cpf, bool isDark) {
     const Color primaryColor = Color(0xFF1D449B);
     const Color accentColor = Color(0xFF25B6E8);
     final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
@@ -400,14 +451,43 @@ class _FinancialScreenState extends State<FinancialScreen> {
     if (mensalidade == null) {
       return Container(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], ),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: isDark ? Border.all(color: Colors.white10) : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(isDark ? 50 : 12),
+              blurRadius: 10,
+            ),
+          ],
+        ),
         child: Column(
           children: [
-            const Icon(Icons.verified_user_rounded, size: 64, color: Colors.green),
+            Icon(
+              Icons.verified_user_rounded,
+              size: 64,
+              color: isDark ? const Color(0xFF4ADE80) : Colors.green,
+            ),
             const SizedBox(height: 16),
-            const Text( 'Tudo em dia!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), textAlign: TextAlign.center, ), // Fonte aumentada
+            Text(
+              'Tudo em dia!',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : primaryColor,
+              ),
+              textAlign: TextAlign.center,
+            ), // Fonte aumentada
             const SizedBox(height: 8),
-            const Text( 'Nenhuma mensalidade pendente encontrada.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 17), ), // Fonte aumentada
+            Text(
+              'Nenhuma mensalidade pendente encontrada.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
+                fontSize: 17,
+              ),
+            ), // Fonte aumentada
             const SizedBox(height: 24),
             TextButton(
               onPressed: () async {
@@ -416,6 +496,9 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   reloadData();
                 }
               },
+              style: TextButton.styleFrom(
+                foregroundColor: isDark ? const Color(0xFF60A5FA) : primaryColor,
+              ),
               child: const Text('Ver histórico de faturas', style: TextStyle(fontSize: 16)), // Fonte aumentada
             ),
           ],
@@ -423,14 +506,25 @@ class _FinancialScreenState extends State<FinancialScreen> {
       );
     }
 
-    final statusInfo = _getStatusInfo(mensalidade.status);
+    final statusInfo = _getStatusInfo(mensalidade.status, isDark);
     final mesFormatado = capitalize(DateFormat('MMMM', 'pt_BR').format(mensalidade.mesReferencia));
 
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 20, offset: const Offset(0, 8))], ),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: isDark ? Border.all(color: Colors.white10) : null,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(isDark ? 50 : 12),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -440,7 +534,11 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   Expanded(
                     child: Text(
                       'Próxima Fatura: $mesFormatado',
-                      style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+                      style: TextStyle(
+                        fontSize: 23,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : primaryColor,
+                      ), // Fonte aumentada
                       maxLines: 2, 
                       overflow: TextOverflow.ellipsis, 
                     ),
@@ -465,17 +563,30 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 fit: BoxFit.scaleDown,
                 child: Text(
                   formatadorMoeda.format(mensalidade.valorFinal), 
-                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF334155))
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF334155),
+                  ),
                 ),
               ),
-              Text('Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}', style: const TextStyle(color: Colors.grey, fontSize: 15)), // Fonte aumentada
+              Text(
+                'Vencimento em ${DateFormat('dd/MM/yyyy').format(mensalidade.dataVencimento)}',
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
+                  fontSize: 15,
+                ),
+              ), // Fonte aumentada
               if (mensalidade.status == 'ATRASADA') ...[
-                const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Divider()),
-                _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Divider(color: isDark ? Colors.white10 : null),
+                ),
+                _buildDetalheRow('Valor Original', formatadorMoeda.format(mensalidade.valorNominal), isDark),
                 const SizedBox(height: 4),
-                _buildDetalheRow('Multa por atraso', formatadorMoeda.format(mensalidade.multa)),
+                _buildDetalheRow('Multa por atraso', formatadorMoeda.format(mensalidade.multa), isDark),
                 const SizedBox(height: 4),
-                _buildDetalheRow('Juros (${mensalidade.diasAtraso} dias)', formatadorMoeda.format(mensalidade.juros)),
+                _buildDetalheRow('Juros (${mensalidade.diasAtraso} dias)', formatadorMoeda.format(mensalidade.juros), isDark),
               ],
               const SizedBox(height: 24),
               Container(
@@ -518,13 +629,21 @@ class _FinancialScreenState extends State<FinancialScreen> {
           },
           icon: const Icon(Icons.receipt_long_outlined, size: 20),
           label: const Text('Ver todas as faturas', style: TextStyle(fontSize: 16)), // Fonte aumentada
-          style: OutlinedButton.styleFrom( foregroundColor: primaryColor, backgroundColor: Colors.white, side: BorderSide(color: Colors.grey.shade300), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isDark ? const Color(0xFF60A5FA) : primaryColor,
+            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            side: BorderSide(
+              color: isDark ? const Color(0xFF334155) : Colors.grey.shade300,
+            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSocialMediaIcons() {
+  Widget _buildSocialMediaIcons(bool isDark) {
     return Column(
       children: [
         Text(
@@ -532,7 +651,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
           style: TextStyle(
             fontSize: 17, // Fonte aumentada
             fontWeight: FontWeight.bold,
-            color: Colors.grey.shade700,
+            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700,
           ),
         ),
         const SizedBox(height: 16),
@@ -542,19 +661,22 @@ class _FinancialScreenState extends State<FinancialScreen> {
             _buildSocialIcon(
               FontAwesomeIcons.whatsapp,
               const Color(0xFF25D366),
-              'https://wa.me/5581995602150', 
+              'https://wa.me/5581995602150',
+              isDark,
             ),
             const SizedBox(width: 24),
             _buildSocialIcon(
               FontAwesomeIcons.instagram,
               const Color(0xFFE4405F),
               'https://instagram.com/csa_agrestina20',
+              isDark,
             ),
             const SizedBox(width: 24),
             _buildSocialIcon(
               FontAwesomeIcons.facebook,
               const Color(0xFF1877F2),
               'https://facebook.com/CsaAgrestina',
+              isDark,
             ),
           ],
         ),
@@ -562,18 +684,19 @@ class _FinancialScreenState extends State<FinancialScreen> {
     );
   }
 
-  Widget _buildSocialIcon(FaIconData icon, Color color, String url) {
+  Widget _buildSocialIcon(FaIconData icon, Color color, String url, bool isDark) {
     return InkWell(
       onTap: () => _launchURL(url),
       borderRadius: BorderRadius.circular(30),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           shape: BoxShape.circle,
+          border: isDark ? Border.all(color: Colors.white10) : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(15),
+              color: Colors.black.withAlpha(isDark ? 40 : 15),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -584,20 +707,27 @@ class _FinancialScreenState extends State<FinancialScreen> {
     );
   }
 
-  Widget _buildDetalheRow(String label, String value) {
+  Widget _buildDetalheRow(String label, String value, bool isDark) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start, 
       children: [
         Expanded( 
           child: Text(
             label, 
-            style: const TextStyle(color: Colors.black54, fontSize: 17), // Fonte aumentada
+            style: TextStyle(
+              color: isDark ? const Color(0xFF94A3B8) : Colors.black54,
+              fontSize: 17,
+            ), // Fonte aumentada
           ),
         ),
         const SizedBox(width: 16), 
         Text(
           value, 
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17), // Fonte aumentada
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            color: isDark ? Colors.white : Colors.black87,
+          ), // Fonte aumentada
           softWrap: false, 
         ),
       ],

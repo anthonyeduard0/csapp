@@ -145,13 +145,18 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : backgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [primaryColor, accentColor],
+            colors: isDark
+                ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+                : const [primaryColor, accentColor],
           ),
         ),
         child: SafeArea(
@@ -161,9 +166,9 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
               Expanded(
                 child: Container(
                   margin: const EdgeInsets.only(top: 20),
-                  decoration: const BoxDecoration(
-                    color: backgroundColor,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : backgroundColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
                     ),
@@ -171,10 +176,10 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                   child: Scrollbar(
                     child: SingleChildScrollView(
                       child: _isLoading
-                          ? _buildLoadingState()
+                          ? _buildLoadingState(isDark)
                           : _error != null
-                              ? _buildErrorState()
-                              : _buildCalendarContent(),
+                              ? _buildErrorState(isDark)
+                              : _buildCalendarContent(isDark),
                     ),
                   ),
                 ),
@@ -216,15 +221,45 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
     );
   }
 
-  Widget _buildLoadingState() {
-    return const Center(child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)), SizedBox(height: 16), Text('Carregando eventos...', style: TextStyle(color: Colors.grey, fontSize: 16)), ], ), );
+  Widget _buildLoadingState(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48.0),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isDark ? const Color(0xFF60A5FA) : primaryColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Carregando eventos...',
+              style: TextStyle(
+                color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildErrorState() {
-    return Center(child: Text(_error!, style: const TextStyle(color: Colors.red)));
+  Widget _buildErrorState(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48.0),
+      child: Center(
+        child: Text(
+          _error!,
+          style: TextStyle(color: isDark ? const Color(0xFFF87171) : Colors.red),
+        ),
+      ),
+    );
   }
 
-  Widget _buildCalendarContent() {
+  Widget _buildCalendarContent(bool isDark) {
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Column(
@@ -233,9 +268,16 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
             margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             padding: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              boxShadow: const [ BoxShadow(color: Color(0x1A1E3A8A), blurRadius: 20, offset: Offset(0, 8)) ],
+              border: isDark ? Border.all(color: Colors.white10) : null,
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.black.withAlpha(50) : const Color(0x1A1E3A8A),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: TableCalendar<Evento>(
               locale: 'pt_BR',
@@ -249,16 +291,32 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                 formatButtonVisible: false,
                 titleCentered: true,
                 // titleTextFormatter removido para usar o headerTitleBuilder
-                titleTextStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+                titleTextStyle: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : primaryColor,
+                ), // Fonte aumentada
                 leftChevronIcon: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: const Color(0x1A1E3A8A), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.chevron_left, color: primaryColor),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF334155) : const Color(0x1A1E3A8A),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.chevron_left,
+                    color: isDark ? Colors.white : primaryColor,
+                  ),
                 ),
                 rightChevronIcon: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: const Color(0x1A1E3A8A), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.chevron_right, color: primaryColor),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF334155) : const Color(0x1A1E3A8A),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: isDark ? Colors.white : primaryColor,
+                  ),
                 ),
               ),
               daysOfWeekHeight: 40.0, // +++ CORREÇÃO (ESPAÇO VERTICAL) +++
@@ -274,7 +332,11 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                       fit: BoxFit.scaleDown,
                       child: Text(
                         title, 
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor) // Fonte aumentada
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : primaryColor,
+                        ), // Fonte aumentada
                       ),
                     ),
                   );
@@ -284,9 +346,9 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                 // +++ INÍCIO DA CORREÇÃO (FittedBox nos Dias da Semana) +++
                 dowBuilder: (context, day) {
                   final text = DateFormat.E('pt_BR').format(day).toUpperCase();
-                  Color textColor = const Color(0xFF475569);
+                  Color textColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
                   if (day.weekday == DateTime.sunday || day.weekday == DateTime.saturday) {
-                    textColor = Colors.red;
+                    textColor = isDark ? const Color(0xFFF87171) : Colors.red;
                   }
                   return Center(
                     child: FittedBox(
@@ -308,9 +370,9 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                       child: Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFA7F3D0), 
-                          shape: BoxShape.circle
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF34D399) : const Color(0xFFA7F3D0), 
+                          shape: BoxShape.circle,
                         ),
                       ),
                     );
@@ -318,34 +380,55 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                   return null;
                 },
               ),
-              calendarStyle: const CalendarStyle(
+              calendarStyle: CalendarStyle(
                 outsideDaysVisible: true,
-                outsideTextStyle: TextStyle(color: Color(0xFFCBD5E1)),
+                outsideTextStyle: TextStyle(
+                  color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                ),
                 // Estilos de fonte aumentados
-                defaultTextStyle: TextStyle(fontSize: 16),
-                weekendTextStyle: TextStyle(color: Colors.red, fontSize: 16),
+                defaultTextStyle: TextStyle(
+                  fontSize: 16,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+                weekendTextStyle: TextStyle(
+                  color: isDark ? const Color(0xFFF87171) : Colors.red,
+                  fontSize: 16,
+                ),
                 todayDecoration: BoxDecoration(
                   color: Colors.transparent, 
                   border: Border.fromBorderSide(
-                    BorderSide(color: Colors.black, width: 2.0), 
+                    BorderSide(
+                      color: isDark ? Colors.white70 : Colors.black,
+                      width: 2.0,
+                    ), 
                   ),
                   shape: BoxShape.circle,
                 ),
-                todayTextStyle: TextStyle(color: Colors.black, fontSize: 16),
-                selectedDecoration: BoxDecoration(
+                todayTextStyle: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontSize: 16,
+                ),
+                selectedDecoration: const BoxDecoration(
                     gradient: LinearGradient(colors: [primaryColor, accentColor]),
                     shape: BoxShape.circle,
                     boxShadow: [BoxShadow(color: Color(0x661E3A8A), blurRadius: 12, offset: Offset(0, 6))]),
-                selectedTextStyle: TextStyle(color: Colors.white, fontSize: 16),
+                selectedTextStyle: const TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
           ),
           Container(
             margin: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              boxShadow: const [ BoxShadow(color: Color(0x1A1E3A8A), blurRadius: 20, offset: Offset(0, 8)) ],
+              border: isDark ? Border.all(color: Colors.white10) : null,
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.black.withAlpha(50) : const Color(0x1A1E3A8A),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -365,17 +448,26 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
                       Expanded(
                         child: Text(
                           _selectedDay != null ? 'Eventos de ${DateFormat('dd/MM/yyyy').format(_selectedDay!)}' : 'Eventos do dia',
-                          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: primaryColor), // Fonte aumentada
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : primaryColor,
+                          ), // Fonte aumentada
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1, indent: 20, endIndent: 20),
+                Divider(
+                  height: 1,
+                  indent: 20,
+                  endIndent: 20,
+                  color: isDark ? Colors.white10 : Colors.grey.shade200,
+                ),
                 ValueListenableBuilder<List<Evento>>(
                   valueListenable: _selectedEvents,
                   builder: (context, value, _) {
-                    if (value.isEmpty) return _buildEmptyEventsState();
+                    if (value.isEmpty) return _buildEmptyEventsState(isDark);
                     return ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -395,16 +487,26 @@ class CalendarScreenState extends State<CalendarScreen> with TickerProviderState
     );
   }
 
-  Widget _buildEmptyEventsState() {
+  Widget _buildEmptyEventsState(bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48.0),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.event_busy_rounded, size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.event_busy_rounded,
+              size: 48,
+              color: isDark ? Colors.grey.shade600 : Colors.grey.shade300,
+            ),
             const SizedBox(height: 16),
-            Text('Nenhum evento para este dia', style: TextStyle(fontSize: 17, color: Colors.grey.shade600)), // Fonte aumentada
+            Text(
+              'Nenhum evento para este dia',
+              style: TextStyle(
+                fontSize: 17,
+                color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+              ),
+            ), // Fonte aumentada
           ],
         ),
       ),
@@ -425,6 +527,7 @@ class _EventCardState extends State<EventCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const Color primaryColor = Color(0xFF1D449B);
     const Color accentColor = Color(0xFF25B6E8);
     
@@ -439,9 +542,15 @@ class _EventCardState extends State<EventCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.white, Colors.grey.shade50]),
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF0F172A), Color(0xFF1E293B)]
+              : [Colors.white, Colors.grey.shade50],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : Colors.grey.shade200,
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -460,11 +569,25 @@ class _EventCardState extends State<EventCard> {
             ),
             child: const Icon(Icons.event_note_rounded, color: Colors.white, size: 20),
           ),
-          title: Text(widget.evento.titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: primaryColor)), // Fonte aumentada
-          subtitle: Text(horario, style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13)), // Fonte aumentada
+          title: Text(
+            widget.evento.titulo,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 17,
+              color: isDark ? Colors.white : primaryColor,
+            ),
+          ), // Fonte aumentada
+          subtitle: Text(
+            horario,
+            style: TextStyle(
+              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ), // Fonte aumentada
           trailing: Icon(
             _isExpanded ? Icons.expand_less : Icons.expand_more,
-            color: primaryColor,
+            color: isDark ? const Color(0xFF60A5FA) : primaryColor,
           ),
           children: <Widget>[
             if (widget.evento.descricao != null && widget.evento.descricao!.isNotEmpty)
@@ -474,7 +597,11 @@ class _EventCardState extends State<EventCard> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     widget.evento.descricao!,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 15, height: 1.5), // Fonte aumentada
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade600,
+                      fontSize: 15,
+                      height: 1.5,
+                    ), // Fonte aumentada
                   ),
                 ),
               ),

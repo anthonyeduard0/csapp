@@ -11,6 +11,7 @@ import 'package:educsa/screens/main_screen.dart';
 import 'package:educsa/screens/legal_screen.dart';
 import 'package:flutter/gestures.dart';
 import 'package:educsa/api_config.dart';
+import 'package:educsa/theme/app_theme.dart';
 
 class TermsAcceptanceWrapper extends StatelessWidget {
   final Map<String, dynamic> responseData;
@@ -236,112 +237,120 @@ UTILIZAÇÃO DAS INFORMAÇÕES
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF1E3A8A);
 
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.policy_outlined,
-                        size: 80, color: primaryColor),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Termos e Privacidade',
-                      style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827)),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Para continuar, você precisa ler e aceitar nossos Termos de Uso e Políticas de Privacidade.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _termsAccepted,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              _termsAccepted = value ?? false;
-                            });
-                          },
-                          activeColor: primaryColor,
-                        ),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
-                                  color: Colors.black54, fontSize: 14),
-                              children: [
-                                const TextSpan(text: 'Eu li e aceito os '),
-                                TextSpan(
-                                  text: 'Termos de Uso',
-                                  style: const TextStyle(
-                                    color: primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () => _showLegalScreen("terms"),
-                                ),
-                                const TextSpan(text: ' e a '),
-                                TextSpan(
-                                  text: 'Política de Privacidade',
-                                  style: const TextStyle(
-                                    color: primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () => _showLegalScreen("privacy"),
-                                ),
-                                const TextSpan(text: '.'),
-                              ],
-                            ),
+    return Theme(
+      data: AppTheme.lightTheme,
+      child: Scaffold(
+        backgroundColor: Colors.grey[100],
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.policy_outlined,
+                          size: 80, color: primaryColor),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Termos e Privacidade',
+                        style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF111827)),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Para continuar, você precisa ler e aceitar nossos Termos de Uso e Políticas de Privacidade.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.black54),
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _termsAccepted,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                _termsAccepted = value ?? false;
+                              });
+                            },
+                            activeColor: primaryColor,
+                            checkColor: Colors.white,
+                            side: const BorderSide(color: Colors.black54, width: 2),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    _isLoading
-                        ? const CircularProgressIndicator()
-                        : SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _termsAccepted ? _acceptTerms : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryColor,
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                disabledBackgroundColor: Colors.grey.shade300,
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                    color: Colors.black54, fontSize: 14),
+                                children: [
+                                  const TextSpan(text: 'Eu li e aceito os '),
+                                  TextSpan(
+                                    text: 'Termos de Uso',
+                                    style: const TextStyle(
+                                      color: primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _showLegalScreen("terms"),
+                                  ),
+                                  const TextSpan(text: ' e a '),
+                                  TextSpan(
+                                    text: 'Política de Privacidade',
+                                    style: const TextStyle(
+                                      color: primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _showLegalScreen("privacy"),
+                                  ),
+                                  const TextSpan(text: '.'),
+                                ],
                               ),
-                              child: const Text('CONTINUAR',
-                                  style: TextStyle(fontSize: 16)),
                             ),
                           ),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      _isLoading
+                          ? const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                            )
+                          : SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _termsAccepted ? _acceptTerms : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  disabledBackgroundColor: Colors.grey.shade300,
+                                  disabledForegroundColor: Colors.grey.shade600,
+                                ),
+                                child: const Text('CONTINUAR',
+                                    style: TextStyle(fontSize: 16)),
+                              ),
+                            ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

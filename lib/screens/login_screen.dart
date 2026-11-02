@@ -135,12 +135,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    
-    final mobileBody = _buildLoginForm(isDesktop: false);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mobileBody = _buildLoginForm(isDesktop: false, isDark: isDark);
 
     // +++  WEB: layout split-screen premium +++
     if (kIsWeb) {
       return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
         resizeToAvoidBottomInset: false,
         body: LayoutBuilder(
           builder: (context, constraints) {
@@ -151,9 +152,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   Expanded(
                     flex: 5,
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
+                          colors: isDark
+                              ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+                              : const [Color(0xFF1D449B), Color(0xFF25B6E8)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -244,13 +247,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   Expanded(
                     flex: 4,
                     child: Container(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF0F172A) : Colors.white,
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 400),
                           child: Padding(
                             padding: const EdgeInsets.all(48),
-                            child: _buildLoginForm(isDesktop: true),
+                            child: _buildLoginForm(isDesktop: true, isDark: isDark),
                           ),
                         ),
                       ),
@@ -262,9 +265,11 @@ class _LoginScreenState extends State<LoginScreen> {
             // Mobile fallback within web
             return Container(
               constraints: const BoxConstraints.expand(),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
+                  colors: isDark
+                      ? const [Color(0xFF0F172A), Color(0xFF1E293B)]
+                      : const [Color(0xFF1D449B), Color(0xFF25B6E8)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -277,13 +282,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1D449B),
       resizeToAvoidBottomInset: false,
       body: Container(
         // CORREÇÃO 1: Força o container a ocupar 100% da tela sempre
         constraints: const BoxConstraints.expand(),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF1D449B), Color(0xFF25B6E8)],
+            colors: isDark
+                ? const [Color(0xFF0F172A), Color(0xFF1E293B)]
+                : const [Color(0xFF1D449B), Color(0xFF25B6E8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -294,9 +302,15 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SizedBox(
               width: 400,
               child: Card(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: _buildLoginForm(isDesktop: true),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: isDark
+                      ? const BorderSide(color: Colors.white10)
+                      : BorderSide.none,
+                ),
+                child: _buildLoginForm(isDesktop: true, isDark: isDark),
               ),
             ),
           ),
@@ -343,13 +357,22 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginForm({required bool isDesktop}) {
-    // Define colors based on the platform
-    final Color primaryTextColor = isDesktop ? Colors.black87 : Colors.white;
-    final Color secondaryTextColor = isDesktop ? Colors.black54 : Colors.white70;
-    final Color fieldIconColor = isDesktop ? Colors.grey[600]! : Colors.white70;
-    final Color buttonBackgroundColor = isDesktop ? const Color(0xFF1E3A8A) : Colors.white;
-    final Color buttonForegroundColor = isDesktop ? Colors.white : const Color(0xFF1E3A8A);
+  Widget _buildLoginForm({required bool isDesktop, required bool isDark}) {
+    // Define colors based on the platform and theme
+    final bool useLightSurface = isDesktop && !isDark;
+    final Color primaryTextColor = useLightSurface ? Colors.black87 : Colors.white;
+    final Color secondaryTextColor = isDark
+        ? const Color(0xFF94A3B8)
+        : (isDesktop ? Colors.black54 : Colors.white70);
+    final Color fieldIconColor = isDark
+        ? const Color(0xFF94A3B8)
+        : (isDesktop ? Colors.grey[600]! : Colors.white70);
+    final Color buttonBackgroundColor = isDark
+        ? const Color(0xFF3B82F6)
+        : (isDesktop ? const Color(0xFF1E3A8A) : Colors.white);
+    final Color buttonForegroundColor = isDark
+        ? Colors.white
+        : (isDesktop ? Colors.white : const Color(0xFF1E3A8A));
 
     // CORREÇÃO 2: LayoutBuilder para calcular a altura disponível
     return LayoutBuilder(
@@ -383,7 +406,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintText: 'CPF',
                     icon: Icons.person_outline,
                     keyboardType: TextInputType.number,
-                    isDesktop: isDesktop
+                    isDesktop: isDesktop,
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 20),
                   _buildTextField(
@@ -398,7 +422,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       onPressed: () { setState(() { _isPasswordVisible = !_isPasswordVisible; }); },
                     ),
-                    isDesktop: isDesktop
+                    isDesktop: isDesktop,
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 10),
                   Padding(
@@ -416,8 +441,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _rememberMe = value ?? false;
                               });
                             },
-                            activeColor: isDesktop ? const Color(0xFF1D449B) : Colors.white,
-                            checkColor: isDesktop ? Colors.white : const Color(0xFF1D449B),
+                            activeColor: isDark
+                                ? const Color(0xFF3B82F6)
+                                : (isDesktop ? const Color(0xFF1D449B) : Colors.white),
+                            checkColor: isDark
+                                ? Colors.white
+                                : (isDesktop ? Colors.white : const Color(0xFF1D449B)),
                             side: BorderSide(color: secondaryTextColor, width: 2),
                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
@@ -441,7 +470,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
                   _isLoading
-                      ? CircularProgressIndicator(color: isDesktop ? const Color(0xFF1E3A8A) : Colors.white)
+                      ? CircularProgressIndicator(
+                          color: isDark
+                              ? const Color(0xFF60A5FA)
+                              : (isDesktop ? const Color(0xFF1E3A8A) : Colors.white),
+                        )
                       : SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -465,13 +498,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         const TextSpan(text: 'Ao entrar, você concorda com nossos ',),
                         TextSpan(
                           text: 'Termos de Uso',
-                          style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline,),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                            color: isDark ? const Color(0xFF60A5FA) : null,
+                          ),
                           recognizer: TapGestureRecognizer()..onTap = _launchTermsOfUse,
                         ),
                         const TextSpan(text: ' e '),
                         TextSpan(
                           text: 'Política de Privacidade.',
-                          style: const TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline,),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                            color: isDark ? const Color(0xFF60A5FA) : null,
+                          ),
                           recognizer: TapGestureRecognizer()..onTap = _launchPrivacyPolicy,
                         ),
                       ],
@@ -494,12 +535,20 @@ class _LoginScreenState extends State<LoginScreen> {
     Widget? suffixIcon,
     TextInputType? keyboardType,
     MaskTextInputFormatter? formatter,
-    required bool isDesktop
+    required bool isDesktop,
+    required bool isDark,
   }) {
-    final Color textColor = isDesktop ? Colors.black87 : Colors.white;
-    final Color hintColor = isDesktop ? Colors.black54 : Colors.white70;
-    final Color iconColor = isDesktop ? Colors.grey[600]! : Colors.white70;
-    final Color fillColor = isDesktop ? Colors.grey[200]! : const Color(0x33FFFFFF);
+    final bool useLightSurface = isDesktop && !isDark;
+    final Color textColor = useLightSurface ? Colors.black87 : Colors.white;
+    final Color hintColor = isDark
+        ? const Color(0xFF94A3B8)
+        : (isDesktop ? Colors.black54 : Colors.white70);
+    final Color iconColor = isDark
+        ? const Color(0xFF94A3B8)
+        : (isDesktop ? Colors.grey[600]! : Colors.white70);
+    final Color fillColor = isDark
+        ? const Color(0xFF1E293B)
+        : (isDesktop ? Colors.grey[200]! : const Color(0x33FFFFFF));
 
     return TextField(
       controller: controller,
@@ -516,7 +565,17 @@ class _LoginScreenState extends State<LoginScreen> {
         fillColor: fillColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+          borderSide: isDark ? const BorderSide(color: Color(0xFF334155)) : BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: isDark ? const BorderSide(color: Color(0xFF334155)) : BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: isDark
+              ? const BorderSide(color: Color(0xFF60A5FA), width: 1.5)
+              : BorderSide.none,
         ),
       ),
     );

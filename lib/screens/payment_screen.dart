@@ -133,13 +133,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
   
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final content = Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : backgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [ primaryColor, accentColor ],
+            colors: isDark
+                ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+                : const [primaryColor, accentColor],
           ),
         ),
         child: SafeArea(
@@ -149,14 +154,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: backgroundColor,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : backgroundColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
                     ),
                   ),
-                  child: _isPaid ? _buildSuccessWidget() : _buildPaymentContent(),
+                  child: _isPaid ? _buildSuccessWidget(isDark) : _buildPaymentContent(isDark),
                 ),
               ),
             ],
@@ -168,7 +173,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     // Web: centraliza com largura máxima para o QR Code ficar legivel
     if (kIsWeb) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF0F4FF),
+        backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF0F4FF),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
@@ -209,15 +214,46 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _buildPaymentContent() {
+  Widget _buildPaymentContent(bool isDark) {
     return FutureBuilder<Map<String, dynamic>>(
       future: _pixDataFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center( child: Column( mainAxisAlignment: MainAxisAlignment.center, children: [ CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor)), SizedBox(height: 16), Text('Gerando QR Code...', style: TextStyle(color: Colors.grey, fontSize: 16)), ], ), );
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? const Color(0xFF60A5FA) : primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Gerando QR Code...',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
         if (snapshot.hasError) {
-          return Center( child: Padding( padding: const EdgeInsets.all(24.0), child: Text( 'Ocorreu um erro: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 16), ), ), );
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                'Ocorreu um erro: ${snapshot.error}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFF87171) : Colors.red,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          );
         }
         if (snapshot.hasData) {
           final pixData = snapshot.data!;
@@ -231,27 +267,81 @@ class _PaymentScreenState extends State<PaymentScreen> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                Text( 'Referência: ${widget.mesReferencia}', style: const TextStyle(fontSize: 16, color: Colors.grey), ),
+                Text(
+                  'Referência: ${widget.mesReferencia}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text( valorFormatado, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryColor), ),
+                Text(
+                  valorFormatado,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : primaryColor,
+                  ),
+                ),
                 const SizedBox(height: 24),
                 
                 // Exibe o QR Code
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 10)], ),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: isDark ? Border.all(color: Colors.white10) : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(isDark ? 50 : 12),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
                   child: qrCodeBase64 != null 
-                    ? Image.memory(base64Decode(qrCodeBase64), width: 220, height: 220)
-                    : const SizedBox(height: 220, width: 220, child: Center(child: Text("QR Code Imagem Indisponível"))),
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(base64Decode(qrCodeBase64), width: 220, height: 220),
+                      )
+                    : SizedBox(
+                        height: 220,
+                        width: 220,
+                        child: Center(
+                          child: Text(
+                            "QR Code Imagem Indisponível",
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ),
                 ),
                 
                 const SizedBox(height: 24),
-                const Text('Ou use o Pix Copia e Cola:', textAlign: TextAlign.center),
+                Text(
+                  'Ou use o Pix Copia e Cola:',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black87,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration( color: Colors.grey[200], borderRadius: BorderRadius.circular(12), ),
-                  child: Text( qrCodeText ?? "Código indisponível", textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Colors.black54), ),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                    border: isDark ? Border.all(color: const Color(0xFF334155)) : null,
+                  ),
+                  child: Text(
+                    qrCodeText ?? "Código indisponível",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.black54,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 
@@ -262,10 +352,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   onPressed: () {
                     if (qrCodeText != null) {
                       Clipboard.setData(ClipboardData(text: qrCodeText));
-                      ScaffoldMessenger.of(context).showSnackBar( SnackBar( content: const Text('Código Pix copiado!'), backgroundColor: primaryColor, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), ), );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Código Pix copiado!'),
+                          backgroundColor: isDark ? const Color(0xFF3B82F6) : primaryColor,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
                     }
                   },
-                  style: ElevatedButton.styleFrom( backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF3B82F6) : primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
                 ),
 
                 // --- OTIMIZAÇÃO: Botão Manual de Verificação ---
@@ -276,8 +378,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                      icon: const Icon(Icons.refresh_rounded),
                      label: const Text("Verificar Pagamento Agora"),
                      style: OutlinedButton.styleFrom(
-                       foregroundColor: primaryColor,
-                       side: const BorderSide(color: primaryColor),
+                       foregroundColor: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                       side: BorderSide(color: isDark ? const Color(0xFF60A5FA) : primaryColor),
                      ),
                    )
                 ]
@@ -285,12 +387,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           );
         }
-        return const Center(child: Text('Algo inesperado aconteceu.'));
+        return Center(
+          child: Text(
+            'Algo inesperado aconteceu.',
+            style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+          ),
+        );
       },
     );
   }
 
-  Widget _buildSuccessWidget() {
+  Widget _buildSuccessWidget(bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -302,13 +409,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: const Icon(Icons.check_rounded, color: Colors.white, size: 80),
           ),
           const SizedBox(height: 32),
-          const Text( 'Pagamento Confirmado!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor), textAlign: TextAlign.center, ),
+          Text(
+            'Pagamento Confirmado!',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : primaryColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
-          const Text( 'Obrigado! Seu pagamento foi processado com sucesso.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16), ),
+          Text(
+            'Obrigado! Seu pagamento foi processado com sucesso.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
+              fontSize: 16,
+            ),
+          ),
           const SizedBox(height: 48),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom( backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? const Color(0xFF3B82F6) : primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
             child: const Text('Voltar para o Início'),
           )
         ],
