@@ -1,11 +1,18 @@
 // lib/web/web_profile_screen.dart
-// Tela de perfil web: layout em grid com card do responsável e cards de alunos/opções.
+// Tela de Perfil e Configurações Web: Layout em 2 Colunas (flex 5 : flex 7) ocupando toda a área útil.
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:educsa/screens/main_screen.dart';
-import 'package:educsa/screens/login_screen.dart';
-import 'package:educsa/screens/settings_screen.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:educsa/api_config.dart';
+import 'package:educsa/providers/theme_provider.dart';
+import 'package:educsa/screens/invoice_history_screen.dart';
+import 'package:educsa/screens/login_screen.dart';
+import 'package:educsa/screens/main_screen.dart';
 
 class WebProfileScreen extends StatefulWidget {
   final Map<String, dynamic> responseData;
@@ -25,12 +32,101 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
   static const Color primaryColor = Color(0xFF1D449B);
   static const Color accentColor = Color(0xFF25B6E8);
 
+  static const String _termsOfUseUrl =
+      'https://gist.githubusercontent.com/anthonyeduard0/0b02af52257c33aee17c52b2872b19a4/raw/0ecf2b0a2491ff082e5649bc2d20a269643f374f/termos-de-uso.md';
+  static const String _privacyPolicyUrl =
+      'https://gist.githubusercontent.com/anthonyeduard0/05ddce8404f3af175acff888101994c2/raw/fe2abf43c91983fe78ff053c626b2f3f1c6bfb6c/politica_de_privacidade.md';
+
   late DashboardData _dashboardData;
+  List<AlunoComMensalidades> _alunosHistorico = [];
 
   @override
   void initState() {
     super.initState();
     _dashboardData = DashboardData.fromJson(widget.responseData);
+    _fetchStudentInvoicesDetails();
+  }
+
+  Future<void> _fetchStudentInvoicesDetails() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/mensalidades/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      if (mounted && response.statusCode == 200) {
+        final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          _alunosHistorico = body
+              .map((dynamic item) => AlunoComMensalidades.fromJson(item))
+              .toList();
+        });
+      }
+    } catch (_) {
+      // Fallback silencioso usando mensalidadesPendentes do aluno
+    }
+  }
+
+  Future<void> _launchTermsOfUse() async {
+    final Uri url = Uri.parse(_termsOfUseUrl);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Não foi possível abrir o link dos termos.')),
+      );
+    }
+  }
+
+  Future<void> _launchPrivacyPolicy() async {
+    final Uri url = Uri.parse(_privacyPolicyUrl);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Não foi possível abrir o link da política.')),
+      );
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final navigator = Navigator.of(context);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_cpf');
+    await prefs.remove('user_password');
+    await prefs.remove('auth_token');
+    widget.onLogout?.call();
+    if (!mounted) return;
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (Route<dynamic> route) => false,
+    );
+  }
+
+  String _getInitials(String name) {
+    final parts =
+        name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+
+  List<Mensalidade> _getMensalidadesDoAluno(Aluno aluno) {
+    final match = _alunosHistorico.where(
+      (h) =>
+          h.nomeCompleto.trim().toLowerCase() ==
+          aluno.nomeCompleto.trim().toLowerCase(),
+    );
+    if (match.isNotEmpty && match.first.mensalidades.isNotEmpty) {
+      return match.first.mensalidades;
+    }
+    return aluno.mensalidadesPendentes;
   }
 
   @override
@@ -38,57 +134,73 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(28),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 700;
+          final isWide = constraints.maxWidth >= 820;
           if (isWide) {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left: Profile card
-                SizedBox(width: 280, child: _buildProfileCard()),
-                const SizedBox(width: 24),
-                // Right: Students + options
+                // Coluna Esquerda (flex: 5) -> Card do Responsável + Preferências/Jurídico/Sessão
                 Expanded(
+                  flex: 5,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildAlunosSection(isDark),
-                      const SizedBox(height: 20),
-                      _buildOptionsSection(context, isDark),
-                      const SizedBox(height: 20),
-                      _buildVersionBadge(),
+                      _buildResponsavelCard(isDark),
+                      const SizedBox(height: 24),
+                      _buildPreferencesLegalSessionCard(context, isDark),
                     ],
                   ),
                 ),
-              ],
-            );
-          } else {
-            return Column(
-              children: [
-                _buildProfileCard(),
-                const SizedBox(height: 20),
-                _buildAlunosSection(isDark),
-                const SizedBox(height: 20),
-                _buildOptionsSection(context, isDark),
-                const SizedBox(height: 20),
-                _buildVersionBadge(),
+                const SizedBox(width: 24),
+                // Coluna Direita (flex: 7) -> Painel de Alunos Vinculados e Dados de Matrícula
+                Expanded(
+                  flex: 7,
+                  child: _buildAlunosPanel(context, isDark),
+                ),
               ],
             );
           }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildResponsavelCard(isDark),
+              const SizedBox(height: 24),
+              _buildAlunosPanel(context, isDark),
+              const SizedBox(height: 24),
+              _buildPreferencesLegalSessionCard(context, isDark),
+            ],
+          );
         },
       ),
     );
   }
 
-  Widget _buildProfileCard() {
+  // ===========================================================================
+  // COLUNA ESQUERDA 1: Card do Responsável Financeiro
+  // ===========================================================================
+
+  Widget _buildResponsavelCard(bool isDark) {
+    final bool termosAceitos = widget.responseData['termos_aceitos'] ?? true;
+    final String telefone =
+        (_dashboardData.telefone != null &&
+                _dashboardData.telefone!.trim().isNotEmpty)
+            ? _dashboardData.telefone!
+            : 'Não cadastrado';
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [primaryColor, accentColor],
+          colors: isDark
+              ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+              : const [primaryColor, accentColor],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -100,246 +212,345 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
         ],
       ),
       child: Column(
-        children: [
-          CircleAvatar(
-            radius: 44,
-            backgroundColor: Colors.white.withAlpha(40),
-            child: Text(
-              _dashboardData.nomeResponsavel.isNotEmpty
-                  ? _dashboardData.nomeResponsavel[0].toUpperCase()
-                  : '?',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _dashboardData.nomeResponsavel,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Responsável',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          const SizedBox(height: 20),
-          _buildProfileInfoRow(Icons.email_rounded, _dashboardData.email),
-          if (_dashboardData.telefone != null &&
-              _dashboardData.telefone!.isNotEmpty)
-            _buildProfileInfoRow(
-                Icons.phone_rounded, _dashboardData.telefone!),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileInfoRow(IconData icon, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(20),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white70, size: 14),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                value,
-                style:
-                    const TextStyle(color: Colors.white, fontSize: 12),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAlunosSection(bool isDark) {
-    return _buildSection(
-      isDark: isDark,
-      title: 'Alunos Vinculados',
-      icon: Icons.school_rounded,
-      child: Column(
-        children: _dashboardData.alunos
-            .map((aluno) => _buildAlunoCard(aluno, isDark))
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _buildAlunoCard(Aluno aluno, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? Colors.white12 : Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               CircleAvatar(
-                radius: 20,
-                backgroundColor: isDark
-                    ? const Color(0xFF3B82F6).withAlpha(40)
-                    : primaryColor.withAlpha(20),
+                radius: 40,
+                backgroundColor: Colors.white.withAlpha(38),
                 child: Text(
-                  aluno.nomeCompleto.isNotEmpty
-                      ? aluno.nomeCompleto[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                  _getInitials(_dashboardData.nomeResponsavel),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    letterSpacing: 1,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 18),
               Expanded(
-                child: Text(
-                  aluno.nomeCompleto,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : primaryColor,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(28),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Responsável Financeiro',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _dashboardData.nomeResponsavel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 20),
+
+          // Badge de Termos Aceitos
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withAlpha(45),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF34D399).withAlpha(120),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.verified_user_rounded,
+                  color: Color(0xFF6EE7B7),
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    termosAceitos
+                        ? 'Termos de Uso e Privacidade Aceitos'
+                        : 'Termos Pendentes de Aceite',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'ATIVO',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          _buildResponsavelInfoTile(
+            icon: Icons.badge_rounded,
+            label: 'CPF',
+            value: _dashboardData.cpfResponsavel,
+          ),
+          const SizedBox(height: 10),
+          _buildResponsavelInfoTile(
+            icon: Icons.email_rounded,
+            label: 'E-mail',
+            value: _dashboardData.email,
+          ),
+          const SizedBox(height: 10),
+          _buildResponsavelInfoTile(
+            icon: Icons.phone_rounded,
+            label: 'Telefone',
+            value: telefone,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResponsavelInfoTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(22),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withAlpha(25)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white70, size: 18),
+          const SizedBox(width: 12),
+          Text(
+            '$label:',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // COLUNA ESQUERDA 2: Card de Preferências, Jurídico e Sessão
+  // ===========================================================================
+
+  Widget _buildPreferencesLegalSessionCard(BuildContext context, bool isDark) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
+    return _buildSectionCard(
+      isDark: isDark,
+      title: 'Preferências, Jurídico e Sessão',
+      subtitle: 'Aparência do painel, documentos oficiais e controle de acesso',
+      icon: Icons.tune_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Switch de Modo Escuro (ThemeProvider)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? Colors.white12 : Colors.grey.shade200,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? const Color(0xFF8B5CF6).withAlpha(30)
+                        : const Color(0xFFF59E0B).withAlpha(30),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isDarkMode
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    color: isDarkMode
+                        ? const Color(0xFFA78BFA)
+                        : const Color(0xFFD97706),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Modo Escuro',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isDarkMode
+                            ? 'Ativado • Conforto visual para baixa luz'
+                            : 'Desativado • Tema claro padrão ativo',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  value: isDarkMode,
+                  activeThumbColor: const Color(0xFF3B82F6),
+                  activeTrackColor: const Color(0xFF1D449B),
+                  onChanged: (value) => themeProvider.toggleTheme(value),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 12),
+
+          // 2. Botão Termos de Uso (Gist externo com Icons.open_in_new)
+          _buildActionTile(
+            isDark: isDark,
+            icon: Icons.article_rounded,
+            title: 'Termos de Uso',
+            subtitle: 'Condições gerais de utilização do portal EduCSA',
+            trailingIcon: Icons.open_in_new,
+            onTap: _launchTermsOfUse,
+          ),
+          const SizedBox(height: 12),
+
+          // 3. Botão Política de Privacidade (Gist externo com Icons.open_in_new)
+          _buildActionTile(
+            isDark: isDark,
+            icon: Icons.privacy_tip_rounded,
+            title: 'Política de Privacidade',
+            subtitle: 'Diretrizes de proteção de dados e LGPD',
+            trailingIcon: Icons.open_in_new,
+            onTap: _launchPrivacyPolicy,
+          ),
+          const SizedBox(height: 16),
+
           Divider(
             height: 1,
             color: isDark ? Colors.white10 : Colors.grey.shade200,
           ),
-          const SizedBox(height: 12),
-          _buildInfoRow(Icons.class_rounded, 'Série/Ano', aluno.serieAno, isDark),
-          const SizedBox(height: 8),
-          _buildInfoRow(
-            Icons.check_circle_rounded,
-            'Status',
-            aluno.statusMatricula,
-            isDark,
-            valueColor: isDark ? const Color(0xFF4ADE80) : Colors.green.shade700,
-          ),
-          const SizedBox(height: 8),
-          _buildInfoRow(
-            Icons.event_available_rounded,
-            'Validade',
-            aluno.validadeMatriculaFormatada ?? 'N/A',
-            isDark,
-          ),
-        ],
-      ),
-    );
-  }
+          const SizedBox(height: 16),
 
-  Widget _buildInfoRow(IconData icon, String label, String value, bool isDark,
-      {Color? valueColor}) {
-    return Row(
-      children: [
-        Icon(icon, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, size: 16),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
-            fontSize: 13,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-            color: valueColor ?? (isDark ? Colors.white : Colors.black87),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOptionsSection(BuildContext context, bool isDark) {
-    return _buildSection(
-      isDark: isDark,
-      title: 'Opções',
-      icon: Icons.settings_rounded,
-      child: Column(
-        children: [
-          _buildOptionTile(
-            context: context,
-            icon: Icons.settings_rounded,
-            title: 'Configurações',
-            subtitle: 'Tema claro/escuro, termos e privacidade',
-            isDark: isDark,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const SettingsScreen()),
+          // 4. Botão Sair da Conta (Logout)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _handleLogout,
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: const Text(
+                'Sair da Conta (Logout)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor:
+                    isDark ? const Color(0xFFF87171) : Colors.red.shade700,
+                side: BorderSide(
+                  color: isDark
+                      ? const Color(0xFFF87171).withAlpha(120)
+                      : Colors.red.shade300,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          _buildOptionTile(
-            context: context,
-            icon: Icons.logout_rounded,
-            title: 'Sair',
-            subtitle: 'Encerrar sua sessão atual',
-            color: Colors.red.shade700,
-            isDark: isDark,
-            onTap: () async {
-              final navigator = Navigator.of(context);
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('user_cpf');
-              await prefs.remove('user_password');
-              if (!mounted) return;
-              navigator.pushAndRemoveUntil(
-                MaterialPageRoute(
-                    builder: (context) => const LoginScreen()),
-                (Route<dynamic> route) => false,
-              );
-            },
+          const SizedBox(height: 14),
+          Center(
+            child: Text(
+              'EduCSA Web • Colégio Santo Antônio • Versão 1.0.1',
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                fontSize: 11,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildOptionTile({
-    required BuildContext context,
+  Widget _buildActionTile({
+    required bool isDark,
     required IconData icon,
     required String title,
     required String subtitle,
-    VoidCallback? onTap,
-    Color? color,
-    bool isDark = false,
+    required IconData trailingIcon,
+    required VoidCallback onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDark ? Colors.white12 : Colors.grey.shade200,
         ),
@@ -348,15 +559,24 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: color ?? (isDark ? const Color(0xFF60A5FA) : primaryColor),
-                  size: 20,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : primaryColor.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -368,23 +588,26 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: color ?? (isDark ? Colors.white : Colors.black87),
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         subtitle,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
                         ),
                       ),
                     ],
                   ),
                 ),
                 Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
-                  size: 14,
+                  trailingIcon,
+                  color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                  size: 18,
                 ),
               ],
             ),
@@ -394,23 +617,399 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     );
   }
 
-  Widget _buildSection({
-    required String title,
+  // ===========================================================================
+  // COLUNA DIREITA (flex: 7): Painel de Alunos Vinculados e Dados de Matrícula
+  // ===========================================================================
+
+  Widget _buildAlunosPanel(BuildContext context, bool isDark) {
+    return _buildSectionCard(
+      isDark: isDark,
+      title: 'Alunos Vinculados e Dados de Matrícula',
+      subtitle:
+          'Informações acadêmicas, parâmetros contratuais e resumo financeiro individual',
+      icon: Icons.school_rounded,
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: (isDark ? const Color(0xFF3B82F6) : primaryColor).withAlpha(25),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          '${_dashboardData.alunos.length} ${_dashboardData.alunos.length == 1 ? 'aluno' : 'alunos'}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+          ),
+        ),
+      ),
+      child: Column(
+        children: _dashboardData.alunos
+            .map((aluno) => _buildRichAlunoCard(context, aluno, isDark))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildRichAlunoCard(BuildContext context, Aluno aluno, bool isDark) {
+    final formatadorMoeda =
+        NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final todasMensalidades = _getMensalidadesDoAluno(aluno);
+    final pendentes = aluno.mensalidadesPendentes;
+
+    final int qtdPendentes = pendentes.length;
+    final int qtdAtrasadas =
+        pendentes.where((m) => m.status == 'ATRASADA').length;
+    final double totalPendente =
+        pendentes.fold(0.0, (sum, m) => sum + m.valorFinal);
+
+    // Extrai Dia de Vencimento e Valor Nominal da Mensalidade
+    final Mensalidade? refMensalidade = todasMensalidades.isNotEmpty
+        ? todasMensalidades.first
+        : (pendentes.isNotEmpty ? pendentes.first : null);
+
+    final String diaVencimentoStr = refMensalidade != null
+        ? 'Todo dia ${refMensalidade.dataVencimento.day.toString().padLeft(2, '0')}'
+        : 'Todo dia 10';
+    final String valorNominalStr = refMensalidade != null
+        ? formatadorMoeda.format(refMensalidade.valorNominal)
+        : 'Conforme contrato';
+
+    final bool isRegular = qtdPendentes == 0;
+    final Color finColor = isRegular
+        ? const Color(0xFF10B981)
+        : (qtdAtrasadas > 0
+            ? const Color(0xFFEF4444)
+            : const Color(0xFFF59E0B));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? Colors.white12 : Colors.grey.shade200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Topo: Avatar + Nome + Série + Badge Status da Matrícula
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: isDark
+                    ? const Color(0xFF3B82F6).withAlpha(40)
+                    : primaryColor.withAlpha(20),
+                child: Text(
+                  _getInitials(aluno.nomeCompleto),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      aluno.nomeCompleto,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Série / Ano: ${aluno.serieAno}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withAlpha(isDark ? 35 : 22),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withAlpha(80),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 14,
+                      color: Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Matrícula ${aluno.statusMatricula}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF10B981),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white10 : Colors.grey.shade200,
+          ),
+          const SizedBox(height: 18),
+
+          // Grade de Parâmetros da Matrícula (4 indicadores)
+          LayoutBuilder(
+            builder: (context, boxConstraints) {
+              final items = [
+                _buildDataMetricBox(
+                  isDark: isDark,
+                  icon: Icons.class_rounded,
+                  label: 'Série / Ano',
+                  value: aluno.serieAno,
+                ),
+                _buildDataMetricBox(
+                  isDark: isDark,
+                  icon: Icons.event_available_rounded,
+                  label: 'Validade da Matrícula',
+                  value: aluno.validadeMatriculaFormatada ?? 'Anual Vigente',
+                ),
+                _buildDataMetricBox(
+                  isDark: isDark,
+                  icon: Icons.calendar_today_rounded,
+                  label: 'Dia de Vencimento',
+                  value: diaVencimentoStr,
+                ),
+                _buildDataMetricBox(
+                  isDark: isDark,
+                  icon: Icons.payments_rounded,
+                  label: 'Valor Nominal da Mensalidade',
+                  value: valorNominalStr,
+                ),
+              ];
+
+              if (boxConstraints.maxWidth >= 520) {
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: items[0]),
+                        const SizedBox(width: 12),
+                        Expanded(child: items[1]),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: items[2]),
+                        const SizedBox(width: 12),
+                        Expanded(child: items[3]),
+                      ],
+                    ),
+                  ],
+                );
+              }
+              return Column(
+                children: items
+                    .map((w) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: w,
+                        ))
+                    .toList(),
+              );
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // Resumo Rápido da Situação Financeira do Aluno
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: finColor.withAlpha(isDark ? 25 : 15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: finColor.withAlpha(70)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: finColor.withAlpha(35),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isRegular
+                        ? Icons.verified_rounded
+                        : Icons.account_balance_wallet_rounded,
+                    color: finColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isRegular
+                            ? 'Situação Financeira Regular'
+                            : '$qtdPendentes ${qtdPendentes == 1 ? 'mensalidade em aberto' : 'mensalidades em aberto'}${qtdAtrasadas > 0 ? ' ($qtdAtrasadas em atraso)' : ''}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isRegular
+                            ? 'Nenhuma fatura pendente para este aluno.'
+                            : 'Total pendente: ${formatadorMoeda.format(totalPendente)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: finColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => InvoiceHistoryScreen(
+                          responsavelCpf: _dashboardData.cpfResponsavel,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.receipt_long_rounded,
+                      size: 16, color: finColor),
+                  label: Text(
+                    'Ver Faturas',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: finColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataMetricBox({
+    required bool isDark,
     required IconData icon,
-    required Widget child,
-    bool isDark = false,
+    required String label,
+    required String value,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.grey.shade200,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (isDark ? const Color(0xFF3B82F6) : primaryColor)
+                  .withAlpha(20),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 16,
+              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required bool isDark,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Widget child,
+    Widget? trailing,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? Colors.white10 : Colors.transparent,
+          color: isDark ? Colors.white10 : Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withAlpha(50) : Colors.black.withAlpha(8),
+            color:
+                isDark ? Colors.black.withAlpha(50) : Colors.black.withAlpha(8),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -421,33 +1020,51 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                color: isDark ? const Color(0xFF60A5FA) : primaryColor,
-                size: 18,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [primaryColor, accentColor],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 20),
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : primaryColor,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              if (trailing != null) ...[
+                const SizedBox(width: 12),
+                trailing,
+              ],
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           child,
         ],
       ),
-    );
-  }
-
-  Widget _buildVersionBadge() {
-    return Text(
-      'Versão do Aplicativo 1.0.1',
-      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
     );
   }
 }

@@ -1,12 +1,12 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:educsa/api_config.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Importação para o Token
+import 'package:educsa/web/web_payment_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String mensalidadeId;
@@ -35,13 +35,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
   static const Color primaryColor = Color(0xFF1D449B);
   static const Color accentColor = Color(0xFF25B6E8);
   static const Color backgroundColor = Color(0xFFF8FAFC);
+  static const double _desktopBreakpoint = 768;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialPixData != null) {
       _pixDataFuture = Future.value(widget.initialPixData);
-       _startPollingForPaymentStatus();
+      _startPollingForPaymentStatus();
     } else {
       _pixDataFuture = _gerarPagamentoPixIndividual();
     }
@@ -53,10 +54,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
+  void _retryGeneratePix() {
+    setState(() {
+      _pixDataFuture = _gerarPagamentoPixIndividual();
+    });
+  }
+
   void _startPollingForPaymentStatus() {
     _pollingTimer?.cancel();
     if (widget.mensalidadeId.startsWith('lote_')) return;
-    
+
     // --- OTIMIZAÇÃO DE POLLING ---
     // Verifica a cada 5 segundos, mas para após 5 minutos (60 tentativas).
     _checksCount = 0;
@@ -65,9 +72,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (_checksCount > 60) {
         timer.cancel(); // Para de verificar automaticamente para poupar o Render
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('Verificação automática pausada. Atualize manualmente se já pagou.')),
-           );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Verificação automática pausada. Atualize manualmente se já pagou.'),
+            ),
+          );
         }
         return;
       }
@@ -79,13 +89,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
     // --- ATUALIZAÇÃO: Busca Token ---
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
-    
+
     // Se não tiver token, não faz a requisição (segurança e economia)
     if (token == null) return;
 
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/pagamento/status/${widget.mensalidadeId}/'),
+        Uri.parse(
+            '${ApiConfig.baseUrl}/pagamento/status/${widget.mensalidadeId}/'),
         headers: {
           'Authorization': 'Bearer $token', // Header de Autenticação
         },
@@ -94,7 +105,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         if (data['status'] == 'PAGA') {
           if (mounted) {
-            setState(() { _isPaid = true; });
+            setState(() {
+              _isPaid = true;
+            });
           }
           _pollingTimer?.cancel();
         }
@@ -124,66 +137,72 @@ class _PaymentScreenState extends State<PaymentScreen> {
         return jsonDecode(utf8.decode(response.bodyBytes));
       } else {
         final errorBody = jsonDecode(utf8.decode(response.bodyBytes));
-        throw Exception('Falha ao gerar Pix: ${errorBody['error'] ?? response.body}');
+        throw Exception(
+            'Falha ao gerar Pix: ${errorBody['error'] ?? response.body}');
       }
     } catch (e) {
       throw Exception('Erro de conexão: ${e.toString()}');
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= _desktopBreakpoint) {
+          return WebPaymentScreen(
+            mensalidadeId: widget.mensalidadeId,
+            valor: widget.valor,
+            mesReferencia: widget.mesReferencia,
+            pixDataFuture: _pixDataFuture,
+            isPaid: _isPaid,
+            onBack: () => Navigator.pop(context, _isPaid),
+            onCheckStatusNow: _checkPaymentStatus,
+            onRetryGeneratePix: _retryGeneratePix,
+          );
+        }
 
-    final content = Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : backgroundColor,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
-                : const [primaryColor, accentColor],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0F172A) : backgroundColor,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF0F172A) : backgroundColor,
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+                    : const [primaryColor, accentColor],
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color:
+                            isDark ? const Color(0xFF0F172A) : backgroundColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: _isPaid
+                          ? _buildSuccessWidget(isDark)
+                          : _buildPaymentContent(isDark),
                     ),
                   ),
-                  child: _isPaid ? _buildSuccessWidget(isDark) : _buildPaymentContent(isDark),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
-
-    // Web: centraliza com largura máxima para o QR Code ficar legivel
-    if (kIsWeb) {
-      return Scaffold(
-        backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF0F4FF),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: content,
-          ),
-        ),
-      );
-    }
-
-    return content;
   }
 
   Widget _buildHeader() {
@@ -195,8 +214,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             onTap: () => Navigator.pop(context, _isPaid),
             child: Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.white.withAlpha(51), borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+              decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(51),
+                  borderRadius: BorderRadius.circular(16)),
+              child: const Icon(Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white, size: 20),
             ),
           ),
           const SizedBox(width: 16),
@@ -204,8 +226,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Pagamento via Pix', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                Text('Finalize sua transação', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Text('Pagamento via Pix',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold)),
+                Text('Finalize sua transação',
+                    style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ),
@@ -259,7 +286,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           final pixData = snapshot.data!;
           final qrCodeBase64 = pixData['qr_code_base64'];
           final qrCodeText = pixData['qr_code'];
-          final formatadorMoeda = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+          final formatadorMoeda =
+              NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
           final valorNumerico = double.tryParse(widget.valor) ?? 0.0;
           final valorFormatado = formatadorMoeda.format(valorNumerico);
 
@@ -284,14 +312,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Exibe o QR Code
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
-                    border: isDark ? Border.all(color: Colors.white10) : null,
+                    border: isDark ? Border.all(color: Colors.white24) : null,
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withAlpha(isDark ? 50 : 12),
@@ -299,25 +327,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
                     ],
                   ),
-                  child: qrCodeBase64 != null 
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.memory(base64Decode(qrCodeBase64), width: 220, height: 220),
-                      )
-                    : SizedBox(
-                        height: 220,
-                        width: 220,
-                        child: Center(
-                          child: Text(
-                            "QR Code Imagem Indisponível",
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.black87,
+                  child: qrCodeBase64 != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.memory(base64Decode(qrCodeBase64),
+                              width: 220, height: 220),
+                        )
+                      : const SizedBox(
+                          height: 220,
+                          width: 220,
+                          child: Center(
+                            child: Text(
+                              "QR Code Imagem Indisponível",
+                              style: TextStyle(
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                 ),
-                
+
                 const SizedBox(height: 24),
                 Text(
                   'Ou use o Pix Copia e Cola:',
@@ -332,19 +361,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF1E293B) : Colors.grey[200],
                     borderRadius: BorderRadius.circular(12),
-                    border: isDark ? Border.all(color: const Color(0xFF334155)) : null,
+                    border: isDark
+                        ? Border.all(color: const Color(0xFF334155))
+                        : null,
                   ),
                   child: Text(
                     qrCodeText ?? "Código indisponível",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? const Color(0xFF94A3B8) : Colors.black54,
+                      color:
+                          isDark ? const Color(0xFF94A3B8) : Colors.black54,
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Botão de Copiar
                 ElevatedButton.icon(
                   icon: const Icon(Icons.copy_rounded, size: 20),
@@ -355,33 +387,41 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: const Text('Código Pix copiado!'),
-                          backgroundColor: isDark ? const Color(0xFF3B82F6) : primaryColor,
+                          backgroundColor:
+                              isDark ? const Color(0xFF3B82F6) : primaryColor,
                           behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                       );
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? const Color(0xFF3B82F6) : primaryColor,
+                    backgroundColor:
+                        isDark ? const Color(0xFF3B82F6) : primaryColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                 ),
 
                 // --- OTIMIZAÇÃO: Botão Manual de Verificação ---
                 if (_checksCount > 60) ...[
-                   const SizedBox(height: 24),
-                   OutlinedButton.icon(
-                     onPressed: _checkPaymentStatus,
-                     icon: const Icon(Icons.refresh_rounded),
-                     label: const Text("Verificar Pagamento Agora"),
-                     style: OutlinedButton.styleFrom(
-                       foregroundColor: isDark ? const Color(0xFF60A5FA) : primaryColor,
-                       side: BorderSide(color: isDark ? const Color(0xFF60A5FA) : primaryColor),
-                     ),
-                   )
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: _checkPaymentStatus,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text("Verificar Pagamento Agora"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor:
+                          isDark ? const Color(0xFF60A5FA) : primaryColor,
+                      side: BorderSide(
+                          color:
+                              isDark ? const Color(0xFF60A5FA) : primaryColor),
+                    ),
+                  )
                 ]
               ],
             ),
@@ -405,8 +445,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration( gradient: LinearGradient(colors: [Colors.green.shade400, Colors.green.shade600]), shape: BoxShape.circle, ),
-            child: const Icon(Icons.check_rounded, color: Colors.white, size: 80),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  colors: [Colors.green.shade400, Colors.green.shade600]),
+              shape: BoxShape.circle,
+            ),
+            child:
+                const Icon(Icons.check_rounded, color: Colors.white, size: 80),
           ),
           const SizedBox(height: 32),
           Text(
@@ -433,8 +478,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: isDark ? const Color(0xFF3B82F6) : primaryColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
             child: const Text('Voltar para o Início'),
           )
