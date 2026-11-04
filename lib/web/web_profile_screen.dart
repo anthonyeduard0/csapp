@@ -10,7 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:educsa/api_config.dart';
 import 'package:educsa/providers/theme_provider.dart';
-import 'package:educsa/screens/invoice_history_screen.dart';
 import 'package:educsa/screens/login_screen.dart';
 import 'package:educsa/screens/main_screen.dart';
 
@@ -184,7 +183,6 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
   // ===========================================================================
 
   Widget _buildResponsavelCard(bool isDark) {
-    final bool termosAceitos = widget.responseData['termos_aceitos'] ?? true;
     final String telefone =
         (_dashboardData.telefone != null &&
                 _dashboardData.telefone!.trim().isNotEmpty)
@@ -266,58 +264,6 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-
-          // Badge de Termos Aceitos
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withAlpha(45),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF34D399).withAlpha(120),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.verified_user_rounded,
-                  color: Color(0xFF6EE7B7),
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    termosAceitos
-                        ? 'Termos de Uso e Privacidade Aceitos'
-                        : 'Termos Pendentes de Aceite',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'ATIVO',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           const SizedBox(height: 20),
           _buildResponsavelInfoTile(
             icon: Icons.badge_rounded,
@@ -625,8 +571,7 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     return _buildSectionCard(
       isDark: isDark,
       title: 'Alunos Vinculados e Dados de Matrícula',
-      subtitle:
-          'Informações acadêmicas, parâmetros contratuais e resumo financeiro individual',
+      subtitle: 'Informações acadêmicas e parâmetros contratuais',
       icon: Icons.school_rounded,
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -657,12 +602,6 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     final todasMensalidades = _getMensalidadesDoAluno(aluno);
     final pendentes = aluno.mensalidadesPendentes;
 
-    final int qtdPendentes = pendentes.length;
-    final int qtdAtrasadas =
-        pendentes.where((m) => m.status == 'ATRASADA').length;
-    final double totalPendente =
-        pendentes.fold(0.0, (sum, m) => sum + m.valorFinal);
-
     // Extrai Dia de Vencimento e Valor Nominal da Mensalidade
     final Mensalidade? refMensalidade = todasMensalidades.isNotEmpty
         ? todasMensalidades.first
@@ -674,13 +613,6 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
     final String valorNominalStr = refMensalidade != null
         ? formatadorMoeda.format(refMensalidade.valorNominal)
         : 'Conforme contrato';
-
-    final bool isRegular = qtdPendentes == 0;
-    final Color finColor = isRegular
-        ? const Color(0xFF10B981)
-        : (qtdAtrasadas > 0
-            ? const Color(0xFFEF4444)
-            : const Color(0xFFF59E0B));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
@@ -839,87 +771,6 @@ class _WebProfileScreenState extends State<WebProfileScreen> {
                     .toList(),
               );
             },
-          ),
-
-          const SizedBox(height: 16),
-
-          // Resumo Rápido da Situação Financeira do Aluno
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: finColor.withAlpha(isDark ? 25 : 15),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: finColor.withAlpha(70)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: finColor.withAlpha(35),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    isRegular
-                        ? Icons.verified_rounded
-                        : Icons.account_balance_wallet_rounded,
-                    color: finColor,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isRegular
-                            ? 'Situação Financeira Regular'
-                            : '$qtdPendentes ${qtdPendentes == 1 ? 'mensalidade em aberto' : 'mensalidades em aberto'}${qtdAtrasadas > 0 ? ' ($qtdAtrasadas em atraso)' : ''}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        isRegular
-                            ? 'Nenhuma fatura pendente para este aluno.'
-                            : 'Total pendente: ${formatadorMoeda.format(totalPendente)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: finColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => InvoiceHistoryScreen(
-                          responsavelCpf: _dashboardData.cpfResponsavel,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.receipt_long_rounded,
-                      size: 16, color: finColor),
-                  label: Text(
-                    'Ver Faturas',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: finColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

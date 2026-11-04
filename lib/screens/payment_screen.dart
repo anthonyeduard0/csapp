@@ -70,15 +70,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _checksCount++;
       if (_checksCount > 60) {
-        timer.cancel(); // Para de verificar automaticamente para poupar o Render
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Verificação automática pausada. Atualize manualmente se já pagou.'),
-            ),
-          );
-        }
+        timer.cancel();
         return;
       }
       _checkPaymentStatus();
@@ -157,7 +149,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             pixDataFuture: _pixDataFuture,
             isPaid: _isPaid,
             onBack: () => Navigator.pop(context, _isPaid),
-            onCheckStatusNow: _checkPaymentStatus,
             onRetryGeneratePix: _retryGeneratePix,
           );
         }
@@ -380,7 +371,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 // Botão de Copiar
                 ElevatedButton.icon(
                   icon: const Icon(Icons.copy_rounded, size: 20),
-                  label: const Text('Copiar Código'),
+                  label: const Text('Copiar Código Pix'),
                   onPressed: () {
                     if (qrCodeText != null) {
                       Clipboard.setData(ClipboardData(text: qrCodeText));
@@ -406,23 +397,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         borderRadius: BorderRadius.circular(16)),
                   ),
                 ),
-
-                // --- OTIMIZAÇÃO: Botão Manual de Verificação ---
-                if (_checksCount > 60) ...[
-                  const SizedBox(height: 24),
-                  OutlinedButton.icon(
-                    onPressed: _checkPaymentStatus,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text("Verificar Pagamento Agora"),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor:
-                          isDark ? const Color(0xFF60A5FA) : primaryColor,
-                      side: BorderSide(
-                          color:
-                              isDark ? const Color(0xFF60A5FA) : primaryColor),
-                    ),
-                  )
-                ]
               ],
             ),
           );

@@ -15,7 +15,6 @@ class WebPaymentScreen extends StatelessWidget {
   final Future<Map<String, dynamic>>? pixDataFuture;
   final bool isPaid;
   final VoidCallback onBack;
-  final Future<void> Function() onCheckStatusNow;
   final VoidCallback onRetryGeneratePix;
 
   const WebPaymentScreen({
@@ -26,7 +25,6 @@ class WebPaymentScreen extends StatelessWidget {
     required this.pixDataFuture,
     required this.isPaid,
     required this.onBack,
-    required this.onCheckStatusNow,
     required this.onRetryGeneratePix,
   });
 
@@ -571,7 +569,7 @@ class WebPaymentScreen extends StatelessWidget {
   }
 
   // ===========================================================================
-  // COLUNA DIREITA (flex: 6): QR Code Base64 + Pix Copia e Cola + Ações
+  // COLUNA DIREITA (flex: 6): QR Code Base64 + Pix Copia e Cola + Copiar
   // ===========================================================================
 
   Widget _buildQrAndCopyPasteCard({
@@ -728,7 +726,7 @@ class WebPaymentScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Botão grande "Copiar Código Pix"
+          // Botão principal "Copiar Código Pix"
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -768,52 +766,6 @@ class WebPaymentScreen extends StatelessWidget {
                     isDark ? const Color(0xFF3B82F6) : primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Botão secundário "Já paguei / Verificar agora"
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                await onCheckStatusNow();
-                if (!context.mounted) return;
-                if (!isPaid) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                        'Status verificado. Assim que o banco confirmar, a tela atualizará automaticamente.',
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text(
-                'Já paguei / Verificar agora',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor:
-                    isDark ? const Color(0xFF60A5FA) : primaryColor,
-                side: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF60A5FA).withAlpha(140)
-                      : primaryColor.withAlpha(140),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -1016,4 +968,3 @@ class WebPaymentScreen extends StatelessWidget {
     );
   }
 }
-
