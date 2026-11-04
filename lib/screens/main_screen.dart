@@ -508,6 +508,12 @@ class _FinancialScreenState extends State<FinancialScreen> {
 
     final statusInfo = _getStatusInfo(mensalidade.status, isDark);
     final mesFormatado = capitalize(DateFormat('MMMM', 'pt_BR').format(mensalidade.mesReferencia));
+    final bool isJaneiro = mensalidade.mesReferencia.month == 1;
+    final String anoRef = DateFormat('yyyy').format(mensalidade.mesReferencia);
+    final String tituloFatura = isJaneiro ? 'Renovação de Matrícula' : 'Próxima Fatura: $mesFormatado';
+    final String mesRefEnvio = isJaneiro
+        ? 'Renovação de Matrícula (Janeiro/$anoRef)'
+        : DateFormat('MM/yyyy').format(mensalidade.mesReferencia);
 
     return Column(
       children: [
@@ -532,15 +538,53 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      'Próxima Fatura: $mesFormatado',
-                      style: TextStyle(
-                        fontSize: 23,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : primaryColor,
-                      ), // Fonte aumentada
-                      maxLines: 2, 
-                      overflow: TextOverflow.ellipsis, 
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (isJaneiro) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF3B82F6) : const Color(0xFF93C5FD),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.school_rounded,
+                                  size: 14,
+                                  color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'MATRÍCULA',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                    color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        Text(
+                          tituloFatura,
+                          style: TextStyle(
+                            fontSize: 23,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : primaryColor,
+                          ),
+                          maxLines: 2, 
+                          overflow: TextOverflow.ellipsis, 
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -577,6 +621,43 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   fontSize: 15,
                 ),
               ), // Fonte aumentada
+              if (isJaneiro) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF064E3B).withAlpha(80)
+                        : const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF059669).withAlpha(90)
+                          : const Color(0xFF86EFAC),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline_rounded,
+                        size: 18,
+                        color: isDark ? const Color(0xFF34D399) : const Color(0xFF16A34A),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'O pagamento desta parcela efetiva a renovação de matrícula online.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (mensalidade.status == 'ATRASADA') ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -598,7 +679,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
                       builder: (context) => PaymentScreen(
                         mensalidadeId: mensalidade.id,
                         valor: mensalidade.valorFinal.toStringAsFixed(2),
-                        mesReferencia: DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
+                        mesReferencia: mesRefEnvio,
                       ),
                     ));
                     if (result == true) {

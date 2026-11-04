@@ -193,8 +193,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
     if (mensalidadesEmAberto.isNotEmpty &&
         mensalidade.id != mensalidadesEmAberto.first.id &&
         mensalidade.mesReferencia.isAfter(mensalidadesEmAberto.first.mesReferencia)) {
-      final mesFormatado = capitalize(DateFormat('MMMM \'de\' yyyy', 'pt_BR')
-          .format(mensalidadesEmAberto.first.mesReferencia));
+      final firstMes = mensalidadesEmAberto.first.mesReferencia;
+      final mesFormatado = firstMes.month == 1
+          ? 'Renovação de Matrícula (Janeiro/${firstMes.year})'
+          : capitalize(DateFormat('MMMM \'de\' yyyy', 'pt_BR').format(firstMes));
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Por favor, pague a fatura mais antiga ($mesFormatado) primeiro.'),
         backgroundColor: Colors.orange.shade700,
@@ -204,14 +206,19 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
       return;
     }
 
+    final bool isJaneiro = mensalidade.mesReferencia.month == 1;
+    final String anoRef = DateFormat('yyyy').format(mensalidade.mesReferencia);
+    final String mesRefEnvio = isJaneiro
+        ? 'Renovação de Matrícula (Janeiro/$anoRef)'
+        : DateFormat('MM/yyyy').format(mensalidade.mesReferencia);
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentScreen(
           mensalidadeId: mensalidade.id,
           valor: mensalidade.valorFinal.toStringAsFixed(2),
-          mesReferencia:
-              DateFormat('MM/yyyy').format(mensalidade.mesReferencia),
+          mesReferencia: mesRefEnvio,
         ),
       ),
     );
@@ -897,6 +904,11 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
     final formatadorMesAno = DateFormat('MMMM \'de\' yyyy', 'pt_BR');
     final formatadorVencimento = DateFormat('dd/MM/yyyy');
     final mesFormatado = capitalize(formatadorMesAno.format(mensalidade.mesReferencia));
+    final bool isJaneiro = mensalidade.mesReferencia.month == 1;
+    final String anoRef = DateFormat('yyyy').format(mensalidade.mesReferencia);
+    final String tituloFatura = isJaneiro
+        ? 'Renovação de Matrícula (Janeiro/$anoRef)'
+        : 'Mensalidade de $mesFormatado';
     final statusInfo = _getMobileStatusInfo(mensalidade.status, isDark);
     final accent = isDark ? const Color(0xFF60A5FA) : primaryColor;
     final mutedColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
@@ -967,8 +979,41 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (isJaneiro) ...[
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF3B82F6) : const Color(0xFF93C5FD),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.school_rounded,
+                                    size: 12,
+                                    color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'MATRÍCULA',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                      color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           Text(
-                            'Mensalidade de $mesFormatado',
+                            tituloFatura,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -977,6 +1022,17 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                               color: isDark ? Colors.white : primaryColor,
                             ),
                           ),
+                          if (isJaneiro) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Efetiva a renovação de matrícula online',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? const Color(0xFF34D399) : const Color(0xFF16A34A),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 4),
                           Text(
                             'Vencimento: ${formatadorVencimento.format(mensalidade.dataVencimento)}',

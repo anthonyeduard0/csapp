@@ -301,37 +301,76 @@ class WebPaymentScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Badge de status "Aguardando Pagamento" com indicador animado
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(28),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white30),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFFFDE047)),
+          // Badges de status: Aguardando Pagamento e Matrícula (se aplicável)
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(28),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white30),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFFFDE047)),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Aguardando Pagamento',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (mesReferencia.contains('Matrícula'))
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDE047).withAlpha(40),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFFDE047),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.school_rounded,
+                        size: 14,
+                        color: Color(0xFFFDE047),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'MATRÍCULA',
+                        style: TextStyle(
+                          color: Color(0xFFFDE047),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(width: 10),
-                Text(
-                  'Aguardando Pagamento',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
           const SizedBox(height: 22),
           const Text(
@@ -386,6 +425,37 @@ class WebPaymentScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (mesReferencia.contains('Matrícula')) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white30),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.school_rounded,
+                    color: Color(0xFFFDE047),
+                    size: 20,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'O pagamento desta parcela efetiva a renovação de matrícula online.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

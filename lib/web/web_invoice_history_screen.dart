@@ -669,6 +669,11 @@ class WebInvoiceHistoryScreen extends StatelessWidget {
     final formatadorVencimento = DateFormat('dd/MM/yyyy');
     final mesFormatado =
         capitalize(formatadorMesAno.format(mensalidade.mesReferencia));
+    final bool isJaneiro = mensalidade.mesReferencia.month == 1;
+    final String anoRef = DateFormat('yyyy').format(mensalidade.mesReferencia);
+    final String tituloFatura = isJaneiro
+        ? 'Renovação de Matrícula (Janeiro/$anoRef)'
+        : 'Mensalidade de $mesFormatado';
     final statusInfo = _getStatusInfo(mensalidade.status);
 
     return Container(
@@ -742,16 +747,75 @@ class WebInvoiceHistoryScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Mensalidade de $mesFormatado',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : primaryColor,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          if (isJaneiro) ...[
+                            Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF1E3A8A)
+                                    : const Color(0xFFDBEAFE),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF3B82F6)
+                                      : const Color(0xFF93C5FD),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.school_rounded,
+                                    size: 12,
+                                    color: isDark
+                                        ? const Color(0xFF93C5FD)
+                                        : const Color(0xFF1D4ED8),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'MATRÍCULA',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                      color: isDark
+                                          ? const Color(0xFF93C5FD)
+                                          : const Color(0xFF1D4ED8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          Expanded(
+                            child: Text(
+                              tituloFatura,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : primaryColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
+                      if (isJaneiro) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          'Efetiva a renovação de matrícula online',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? const Color(0xFF34D399) : const Color(0xFF16A34A),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 6),
                       Row(
                         children: [

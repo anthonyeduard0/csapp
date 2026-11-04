@@ -24,4 +24,4 @@ flutter precache --web
 
 # 6. Run build with verbose output to diagnose any compilation failures in detail
 echo "Compiling Flutter Web application..."
-flutter build web --release --verbose
+flutter/bin/flutter build web --release --pwa-strategy=none --dart-define=SENTRY_DSN="$SENTRY_DSN"
