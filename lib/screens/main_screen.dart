@@ -234,6 +234,7 @@ class FinancialScreen extends StatefulWidget {
 
 class _FinancialScreenState extends State<FinancialScreen> {
   Future<DashboardData>? _dashboardDataFuture;
+  late DashboardData _dashboardData;
   int? _selectedAlunoIndex;
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
@@ -241,27 +242,56 @@ class _FinancialScreenState extends State<FinancialScreen> {
   @override
   void initState() {
     super.initState();
-    _dashboardDataFuture = Future.value(DashboardData.fromJson(widget.responseData));
+    _dashboardData = DashboardData.fromJson(widget.responseData);
+    _dashboardDataFuture = Future.value(_dashboardData);
   }
 
-  Future<void> reloadData() async {
+  Future<void> _atualizarDadosFinanceiros() async {
     final prefs = await SharedPreferences.getInstance();
-    final cpf = prefs.getString('user_cpf');
-    final password = prefs.getString('user_password');
+    final token = prefs.getString('auth_token');
+    if (token == null) return;
 
-    if (cpf == null || password == null) return;
-    
-    final url = Uri.parse('${ApiConfig.baseUrl}/login/');
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode({'cpf': cpf, 'password': password}),
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/mensalidades/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
+
       if (mounted && response.statusCode == 200) {
-        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+        final historico = body
+            .map((dynamic item) => AlunoComMensalidades.fromJson(item))
+            .toList();
+
+        final updatedAlunos = _dashboardData.alunos.map((aluno) {
+          final match = historico.where(
+            (h) =>
+                h.nomeCompleto.trim().toLowerCase() ==
+                aluno.nomeCompleto.trim().toLowerCase(),
+          );
+          if (match.isNotEmpty) {
+            final pendentes = match.first.mensalidades
+                .where((m) => m.status == 'PENDENTE' || m.status == 'ATRASADA')
+                .toList()
+              ..sort((a, b) => a.dataVencimento.compareTo(b.dataVencimento));
+            return Aluno(
+              nomeCompleto: aluno.nomeCompleto,
+              serieAno: aluno.serieAno,
+              statusMatricula: aluno.statusMatricula,
+              validadeMatriculaFormatada: aluno.validadeMatriculaFormatada,
+              mensalidadesPendentes: pendentes,
+            );
+          }
+          return aluno;
+        }).toList();
+
+        final newDashboard = _dashboardData.copyWith(alunos: updatedAlunos);
         setState(() {
-          _dashboardDataFuture = Future.value(DashboardData.fromJson(responseData));
+          _dashboardData = newDashboard;
+          _dashboardDataFuture = Future.value(newDashboard);
         });
       }
     } catch (e) {
@@ -275,6 +305,8 @@ class _FinancialScreenState extends State<FinancialScreen> {
       }
     }
   }
+
+  Future<void> reloadData() => _atualizarDadosFinanceiros();
 
   Future<void> _launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
@@ -507,10 +539,8 @@ class _FinancialScreenState extends State<FinancialScreen> {
             const SizedBox(height: 24),
             TextButton(
               onPressed: () async {
-                final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
-                if (result == true) {
-                  reloadData();
-                }
+                await Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
+                await _atualizarDadosFinanceiros();
               },
               style: TextButton.styleFrom(
                 foregroundColor: isDark ? const Color(0xFF60A5FA) : primaryColor,
@@ -691,16 +721,14 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 decoration: BoxDecoration( gradient: const LinearGradient(colors: [primaryColor, accentColor]), borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: primaryColor.withAlpha(76), blurRadius: 12, offset: const Offset(0, 6))], ),
                 child: ElevatedButton(
                   onPressed: () async {
-                    final result = await Navigator.push(context, MaterialPageRoute(
+                    await Navigator.push(context, MaterialPageRoute(
                       builder: (context) => PaymentScreen(
                         mensalidadeId: mensalidade.id,
                         valor: mensalidade.valorFinal.toStringAsFixed(2),
                         mesReferencia: mesRefEnvio,
                       ),
                     ));
-                    if (result == true) {
-                      reloadData();
-                    }
+                    await _atualizarDadosFinanceiros();
                   },
                   style: ElevatedButton.styleFrom( backgroundColor: Colors.transparent, shadowColor: Colors.transparent, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), ),
                   child: const Row(
@@ -719,10 +747,8 @@ class _FinancialScreenState extends State<FinancialScreen> {
         const SizedBox(height: 24),
         OutlinedButton.icon(
           onPressed: () async {
-            final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
-            if (result == true) {
-              reloadData();
-            }
+            await Navigator.push(context, MaterialPageRoute(builder: (context) => InvoiceHistoryScreen(responsavelCpf: cpf)));
+            await _atualizarDadosFinanceiros();
           },
           icon: const Icon(Icons.receipt_long_outlined, size: 20),
           label: const Text('Ver todas as faturas', style: TextStyle(fontSize: 16)), // Fonte aumentada

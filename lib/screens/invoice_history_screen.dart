@@ -25,7 +25,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   double _totalSelecionado = 0.0;
   List<Mensalidade> _allInvoices = [];
   List<AlunoComMensalidades> _alunosHistorico = [];
-  bool _didPay = false; 
+  bool _houveAlteracao = false;
   
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -55,12 +55,19 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
     super.dispose();
   }
 
+  Future<void> _fetchMensalidades() => _refreshData();
+
   Future<void> _refreshData() async {
+    final future = _fetchInvoiceHistory();
     setState(() {
-      _historyFuture = _fetchInvoiceHistory();
+      _historyFuture = future;
       _selectedInvoiceIds.clear();
       _totalSelecionado = 0.0;
     });
+    try {
+      await future;
+      if (mounted) setState(() {});
+    } catch (_) {}
   }
 
   Future<List<AlunoComMensalidades>> _fetchInvoiceHistory() async {
@@ -175,18 +182,21 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
       
       if (response.statusCode == 201 || response.statusCode == 200) {
         final pixData = jsonDecode(utf8.decode(response.bodyBytes));
-        final result = await navigator.push(MaterialPageRoute(
+        final firstId = _selectedInvoiceIds.isNotEmpty
+            ? _selectedInvoiceIds.first
+            : '${DateTime.now().millisecondsSinceEpoch}';
+        final pago = await navigator.push(MaterialPageRoute(
           builder: (context) => PaymentScreen(
-            mensalidadeId: 'lote_${DateTime.now().millisecondsSinceEpoch}',
+            mensalidadeId: 'lote_$firstId',
             valor: _totalSelecionado.toStringAsFixed(2),
             mesReferencia: '${_selectedInvoiceIds.length} faturas',
             initialPixData: pixData,
           ),
         ));
         
-        if (result == true) {
-          _didPay = true;
-          _refreshData();
+        if (pago == true) {
+          _houveAlteracao = true;
+          await _fetchMensalidades();
         }
       } else {
         final error = jsonDecode(response.body)['error'] ?? 'Erro desconhecido';
@@ -223,7 +233,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         ? 'Renovação de Matrícula (Janeiro/$anoRef)'
         : DateFormat('MM/yyyy').format(mensalidade.mesReferencia);
 
-    final result = await Navigator.push(
+    final pago = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentScreen(
@@ -234,9 +244,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
       ),
     );
 
-    if (result == true) {
-      _didPay = true;
-      _refreshData();
+    if (pago == true) {
+      _houveAlteracao = true;
+      await _fetchMensalidades();
     }
   }
 
@@ -262,32 +272,39 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   Widget build(BuildContext context) {
     // O FutureBuilder fica acima do LayoutBuilder para que ambos os layouts
     // (mobile e web) compartilhem exatamente o mesmo estado de carregamento.
-    return FutureBuilder<List<AlunoComMensalidades>>(
-      future: _historyFuture,
-      builder: (context, snapshot) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth >= _desktopBreakpoint) {
-              return WebInvoiceHistoryScreen(
-                snapshot: snapshot,
-                allInvoices: _allInvoices,
-                selectedInvoiceIds: _selectedInvoiceIds,
-                totalSelecionado: _totalSelecionado,
-                tabIndex: _tabController.index,
-                onTabChanged: (index) => _tabController.index = index,
-                onRefresh: _refreshData,
-                onBack: () => Navigator.pop(context, _didPay),
-                onInvoiceSelected: _onInvoiceSelected,
-                onPayIndividual: _pagarFaturaIndividual,
-                onPaySelected: _pagarSelecionados,
-                onSelectAll: _selecionarTodasFaturas,
-                onClearSelection: _limparSelecao,
-              );
-            }
-            return _buildMobileLayout(context, snapshot);
-          },
-        );
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _houveAlteracao);
       },
+      child: FutureBuilder<List<AlunoComMensalidades>>(
+        future: _historyFuture,
+        builder: (context, snapshot) {
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= _desktopBreakpoint) {
+                return WebInvoiceHistoryScreen(
+                  snapshot: snapshot,
+                  allInvoices: _allInvoices,
+                  selectedInvoiceIds: _selectedInvoiceIds,
+                  totalSelecionado: _totalSelecionado,
+                  tabIndex: _tabController.index,
+                  onTabChanged: (index) => _tabController.index = index,
+                  onRefresh: _refreshData,
+                  onBack: () => Navigator.pop(context, _houveAlteracao),
+                  onInvoiceSelected: _onInvoiceSelected,
+                  onPayIndividual: _pagarFaturaIndividual,
+                  onPaySelected: _pagarSelecionados,
+                  onSelectAll: _selecionarTodasFaturas,
+                  onClearSelection: _limparSelecao,
+                );
+              }
+              return _buildMobileLayout(context, snapshot);
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -391,7 +408,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
             children: [
               IconButton(
                 tooltip: 'Voltar',
-                onPressed: () => Navigator.pop(context, _didPay),
+                onPressed: () => Navigator.pop(context, _houveAlteracao),
                 constraints: compact,
                 padding: EdgeInsets.zero,
                 icon: Icon(Icons.arrow_back_rounded,

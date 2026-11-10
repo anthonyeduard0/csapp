@@ -60,9 +60,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
   }
 
+  String? get _pollingMensalidadeId {
+    if (!widget.mensalidadeId.startsWith('lote_')) {
+      return widget.mensalidadeId;
+    }
+    final extracted = widget.mensalidadeId.substring('lote_'.length);
+    // Se contiver hífens (UUID real da fatura), permite polling mesmo em lote
+    return extracted.contains('-') ? extracted : null;
+  }
+
   void _startPollingForPaymentStatus() {
     _pollingTimer?.cancel();
-    if (widget.mensalidadeId.startsWith('lote_')) return;
+    if (_pollingMensalidadeId == null) return;
 
     // --- OTIMIZAÇÃO DE POLLING ---
     // Verifica a cada 5 segundos, mas para após 5 minutos (60 tentativas).
@@ -78,6 +87,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _checkPaymentStatus() async {
+    final targetId = _pollingMensalidadeId;
+    if (targetId == null) return;
+
     // --- ATUALIZAÇÃO: Busca Token ---
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
@@ -88,7 +100,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final response = await http.get(
         Uri.parse(
-            '${ApiConfig.baseUrl}/pagamento/status/${widget.mensalidadeId}/'),
+            '${ApiConfig.baseUrl}/pagamento/status/$targetId/'),
         headers: {
           'Authorization': 'Bearer $token', // Header de Autenticação
         },
@@ -139,60 +151,67 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= _desktopBreakpoint) {
-          return WebPaymentScreen(
-            mensalidadeId: widget.mensalidadeId,
-            valor: widget.valor,
-            mesReferencia: widget.mesReferencia,
-            pixDataFuture: _pixDataFuture,
-            isPaid: _isPaid,
-            onBack: () => Navigator.pop(context, _isPaid),
-            onRetryGeneratePix: _retryGeneratePix,
-          );
-        }
-
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return Scaffold(
-          backgroundColor: isDark ? const Color(0xFF0F172A) : backgroundColor,
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark
-                    ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
-                    : const [primaryColor, accentColor],
-              ),
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color:
-                            isDark ? const Color(0xFF0F172A) : backgroundColor,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(30),
-                          topRight: Radius.circular(30),
-                        ),
-                      ),
-                      child: _isPaid
-                          ? _buildSuccessWidget(isDark)
-                          : _buildPaymentContent(isDark),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _isPaid);
       },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= _desktopBreakpoint) {
+            return WebPaymentScreen(
+              mensalidadeId: widget.mensalidadeId,
+              valor: widget.valor,
+              mesReferencia: widget.mesReferencia,
+              pixDataFuture: _pixDataFuture,
+              isPaid: _isPaid,
+              onBack: () => Navigator.pop(context, _isPaid),
+              onRetryGeneratePix: _retryGeneratePix,
+            );
+          }
+
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          return Scaffold(
+            backgroundColor: isDark ? const Color(0xFF0F172A) : backgroundColor,
+            body: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? const [Color(0xFF0F172A), Color(0xFF1E3A8A)]
+                      : const [primaryColor, accentColor],
+                ),
+              ),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color:
+                              isDark ? const Color(0xFF0F172A) : backgroundColor,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(30),
+                            topRight: Radius.circular(30),
+                          ),
+                        ),
+                        child: _isPaid
+                            ? _buildSuccessWidget(isDark)
+                            : _buildPaymentContent(isDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -713,7 +732,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           const SizedBox(height: 48),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: isDark ? const Color(0xFF3B82F6) : primaryColor,
               foregroundColor: Colors.white,
@@ -722,7 +741,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
             ),
-            child: const Text('Voltar para o Início'),
+            child: const Text('Voltar ao Início'),
           )
         ],
       ),
