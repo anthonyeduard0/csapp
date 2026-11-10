@@ -319,22 +319,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                   ),
                 ],
-                Text(
-                  widget.mesReferencia.contains('Matrícula')
-                      ? widget.mesReferencia
-                      : 'Referência: ${widget.mesReferencia}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: widget.mesReferencia.contains('Matrícula')
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: isDark
-                        ? Colors.white70
-                        : (widget.mesReferencia.contains('Matrícula')
-                            ? primaryColor
-                            : Colors.grey),
-                  ),
-                ),
                 if (widget.mesReferencia.contains('Matrícula')) ...[
                   const SizedBox(height: 8),
                   Container(
@@ -372,7 +356,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
+                Text(
+                  'Valor Total a Pagar',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   valorFormatado,
                   style: TextStyle(
@@ -381,6 +372,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     color: isDark ? Colors.white : primaryColor,
                   ),
                 ),
+                const SizedBox(height: 16),
+                _buildBillingMetaCard(isDark),
                 const SizedBox(height: 24),
 
                 // Exibe o QR Code
@@ -476,6 +469,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         borderRadius: BorderRadius.circular(16)),
                   ),
                 ),
+                const SizedBox(height: 24),
+                _buildStepByStepCard(isDark),
               ],
             ),
           );
@@ -490,7 +485,191 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  Widget _buildBillingMetaCard(bool isDark) {
+    final bool isBatch = widget.mensalidadeId.startsWith('lote_');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          _buildMetaRow(
+            Icons.description_rounded,
+            isBatch ? 'Pagamento em Lote' : 'Referência da Fatura',
+            widget.mesReferencia,
+            isDark,
+          ),
+          const SizedBox(height: 10),
+          _buildMetaRow(Icons.pix_rounded, 'Modalidade', 'Pix Instantâneo (24h)', isDark),
+          const SizedBox(height: 10),
+          _buildMetaRow(Icons.verified_rounded, 'Beneficiário',
+              'Colégio Santo Antônio • EduCSA', isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetaRow(IconData icon, String label, String value, bool isDark) {
+    final Color muted = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: muted),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(fontSize: 12, color: muted)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : primaryColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepByStepCard(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withAlpha(50) : Colors.black.withAlpha(8),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: (isDark ? const Color(0xFF3B82F6) : primaryColor).withAlpha(22),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.help_outline_rounded,
+                  color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Passo a Passo para Pagar',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildStepItem(
+            '1',
+            'Abra o app do seu banco',
+            'No seu celular, acesse o aplicativo da sua instituição financeira ou carteira digital.',
+            isDark,
+          ),
+          const SizedBox(height: 12),
+          _buildStepItem(
+            '2',
+            'Escolha pagar via Pix com QR Code ou Copia e Cola',
+            "Escaneie o QR Code acima ou clique em 'Copiar Código Pix' para colar no aplicativo do seu banco.",
+            isDark,
+          ),
+          const SizedBox(height: 12),
+          _buildStepItem(
+            '3',
+            'Confirme os dados e finalize',
+            'A baixa ocorre automaticamente nesta tela em poucos segundos após a confirmação.',
+            isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepItem(String number, String title, String description, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [primaryColor, accentColor]),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSuccessWidget(bool isDark) {
+    final valorFormatado = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$')
+        .format(double.tryParse(widget.valor) ?? 0.0);
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -502,6 +681,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
               gradient: LinearGradient(
                   colors: [Colors.green.shade400, Colors.green.shade600]),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withAlpha(80),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child:
                 const Icon(Icons.check_rounded, color: Colors.white, size: 80),
@@ -518,10 +704,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Obrigado! Seu pagamento foi processado com sucesso.',
+            'Seu pagamento de $valorFormatado (Ref: ${widget.mesReferencia}) foi processado com sucesso.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
+              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
               fontSize: 16,
             ),
           ),

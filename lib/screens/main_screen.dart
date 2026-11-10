@@ -232,6 +232,7 @@ class FinancialScreen extends StatefulWidget {
 
 class _FinancialScreenState extends State<FinancialScreen> {
   Future<DashboardData>? _dashboardDataFuture;
+  int? _selectedAlunoIndex;
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
 
@@ -316,11 +317,20 @@ class _FinancialScreenState extends State<FinancialScreen> {
                 return Center(child: Text('Erro ao carregar dados: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
               }
               final dashboardData = snapshot.data!;
+              // Aluno selecionado: por padrão, o primeiro com fatura pendente.
+              int selectedIdx = _selectedAlunoIndex ?? 0;
+              if (_selectedAlunoIndex == null) {
+                final firstWithPending = dashboardData.alunos
+                    .indexWhere((a) => a.mensalidadesPendentes.isNotEmpty);
+                selectedIdx = firstWithPending >= 0 ? firstWithPending : 0;
+              }
+              if (selectedIdx >= dashboardData.alunos.length) selectedIdx = 0;
+
               Mensalidade? proximaMensalidade;
-              for (var aluno in dashboardData.alunos) {
-                if (aluno.mensalidadesPendentes.isNotEmpty) {
-                    proximaMensalidade = aluno.mensalidadesPendentes.first;
-                    break; 
+              if (dashboardData.alunos.isNotEmpty) {
+                final alunoSel = dashboardData.alunos[selectedIdx];
+                if (alunoSel.mensalidadesPendentes.isNotEmpty) {
+                  proximaMensalidade = alunoSel.mensalidadesPendentes.first;
                 }
               }
 
@@ -348,6 +358,10 @@ class _FinancialScreenState extends State<FinancialScreen> {
                           child: Column( 
                             children: [
                               _buildFaturaCard(context, proximaMensalidade, dashboardData.cpfResponsavel, isDark),
+                              if (dashboardData.alunos.isNotEmpty) ...[
+                                const SizedBox(height: 24),
+                                _buildAlunosVinculadosCard(dashboardData.alunos, selectedIdx, isDark),
+                              ],
                               const SizedBox(height: 24), 
                               _buildSocialMediaIcons(isDark), 
                             ],
@@ -721,6 +735,128 @@ class _FinancialScreenState extends State<FinancialScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAlunosVinculadosCard(List<Aluno> alunos, int selectedIdx, bool isDark) {
+    const Color primaryColor = Color(0xFF1E3A8A);
+    final Color accent = isDark ? const Color(0xFF60A5FA) : primaryColor;
+    final bool hasMultiple = alunos.length > 1;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: isDark ? Border.all(color: Colors.white10) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 50 : 12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Alunos Vinculados',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: accent,
+            ),
+          ),
+          if (hasMultiple) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Toque em um aluno para ver as faturas dele.',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          ...List.generate(alunos.length, (index) {
+            final aluno = alunos[index];
+            final bool isSelected = hasMultiple && selectedIdx == index;
+            return Padding(
+              padding: EdgeInsets.only(bottom: index == alunos.length - 1 ? 0 : 8),
+              child: Material(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F4FF),
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: hasMultiple
+                      ? () => setState(() => _selectedAlunoIndex = index)
+                      : null,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: isSelected ? Border.all(color: accent, width: 1.5) : null,
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: isDark
+                              ? const Color(0xFF3B82F6).withAlpha(40)
+                              : primaryColor.withAlpha(30),
+                          child: Text(
+                            aluno.nomeCompleto.isNotEmpty
+                                ? aluno.nomeCompleto[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              color: accent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                aluno.nomeCompleto,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : primaryColor,
+                                ),
+                              ),
+                              Text(
+                                aluno.serieAno,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark ? Colors.grey.shade400 : Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 8),
+                          Icon(Icons.check_circle, size: 22, color: accent),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 
