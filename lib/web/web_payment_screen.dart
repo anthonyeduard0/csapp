@@ -139,37 +139,6 @@ class WebPaymentScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Badge Ambiente Seguro • Mercado Pago
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withAlpha(isDark ? 30 : 20),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFF10B981).withAlpha(80),
-              ),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.lock_rounded,
-                  size: 15,
-                  color: Color(0xFF10B981),
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Ambiente Seguro • Mercado Pago',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF10B981),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
           // Alternar Tema
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {

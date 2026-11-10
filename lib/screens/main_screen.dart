@@ -82,14 +82,16 @@ class Aluno {
 
 class AlunoComMensalidades {
   final String nomeCompleto;
+  final String? serieAno;
   final List<Mensalidade> mensalidades;
-  AlunoComMensalidades({required this.nomeCompleto, required this.mensalidades});
+  AlunoComMensalidades({required this.nomeCompleto, this.serieAno, required this.mensalidades});
   factory AlunoComMensalidades.fromJson(Map<String, dynamic> json) {
     var mensalidadesList = json['mensalidades'] as List;
     List<Mensalidade> mensalidades = mensalidadesList.map((i) => Mensalidade.fromJson(i)).toList();
     mensalidades.sort((a, b) => b.dataVencimento.compareTo(a.dataVencimento));
     return AlunoComMensalidades(
       nomeCompleto: json['nome_completo'],
+      serieAno: json['serie_ano'] as String?,
       mensalidades: mensalidades,
     );
   }

@@ -171,11 +171,6 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
     });
   }
 
-  void _jumpToToday() {
-    final now = DateTime.now();
-    _onDaySelected(now, now);
-  }
-
   String _capitalize(String s) =>
       s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : '';
 
@@ -351,26 +346,6 @@ class _WebCalendarScreenState extends State<WebCalendarScreen>
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: _jumpToToday,
-                icon: const Icon(Icons.today_rounded, size: 16),
-                label: const Text('Hoje'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor:
-                      isDark ? const Color(0xFF60A5FA) : primaryColor,
-                  side: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF60A5FA).withAlpha(120)
-                        : primaryColor.withAlpha(120),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                 ),
               ),
             ],

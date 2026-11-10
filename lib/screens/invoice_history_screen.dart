@@ -24,6 +24,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
   final Set<String> _selectedInvoiceIds = {};
   double _totalSelecionado = 0.0;
   List<Mensalidade> _allInvoices = [];
+  List<AlunoComMensalidades> _alunosHistorico = [];
   bool _didPay = false; 
   
   late AnimationController _fadeController;
@@ -87,6 +88,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
         List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
         final data = body.map((dynamic item) => AlunoComMensalidades.fromJson(item)).toList();
         _allInvoices = data.expand((aluno) => aluno.mensalidades).toList();
+        _alunosHistorico = data;
         _allInvoices.sort((a, b) => a.mesReferencia.compareTo(b.mesReferencia));
         if (mounted) _fadeController.forward();
         return data;
@@ -98,6 +100,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
     } catch (e) {
       throw Exception('Erro de conexão: ${e.toString()}');
     }
+  }
+
+  /// Retorna o aluno dono da fatura somente quando há mais de 1 aluno vinculado.
+  AlunoComMensalidades? _alunoDaFatura(Mensalidade mensalidade) {
+    if (_alunosHistorico.length <= 1) return null;
+    for (final aluno in _alunosHistorico) {
+      if (aluno.mensalidades.any((m) => m.id == mensalidade.id)) return aluno;
+    }
+    return null;
   }
 
   void _onInvoiceSelected(bool? isSelected, Mensalidade mensalidade) {
@@ -905,6 +916,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
     final formatadorVencimento = DateFormat('dd/MM/yyyy');
     final mesFormatado = capitalize(formatadorMesAno.format(mensalidade.mesReferencia));
     final bool isJaneiro = mensalidade.mesReferencia.month == 1;
+    final AlunoComMensalidades? alunoDaFatura = _alunoDaFatura(mensalidade);
     final String anoRef = DateFormat('yyyy').format(mensalidade.mesReferencia);
     final String tituloFatura = isJaneiro
         ? 'Renovação de Matrícula (Janeiro/$anoRef)'
@@ -1031,6 +1043,33 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> with Ticker
                                 color: isDark ? const Color(0xFF34D399) : const Color(0xFF16A34A),
                                 fontWeight: FontWeight.w500,
                               ),
+                            ),
+                          ],
+                          if (alunoDaFatura != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 1),
+                                  child: Icon(Icons.person_outline, size: 15, color: accent),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    (alunoDaFatura.serieAno != null && alunoDaFatura.serieAno!.isNotEmpty)
+                                        ? '${alunoDaFatura.nomeCompleto} • ${alunoDaFatura.serieAno}'
+                                        : alunoDaFatura.nomeCompleto,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: accent,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                           const SizedBox(height: 4),

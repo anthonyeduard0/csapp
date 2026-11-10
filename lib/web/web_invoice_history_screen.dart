@@ -657,6 +657,16 @@ class WebInvoiceHistoryScreen extends StatelessWidget {
     }
   }
 
+  /// Retorna o aluno dono da fatura somente quando há mais de 1 aluno vinculado.
+  AlunoComMensalidades? _alunoDaFatura(Mensalidade mensalidade) {
+    final alunos = snapshot.data;
+    if (alunos == null || alunos.length <= 1) return null;
+    for (final aluno in alunos) {
+      if (aluno.mensalidades.any((m) => m.id == mensalidade.id)) return aluno;
+    }
+    return null;
+  }
+
   Widget _buildInvoiceCard(
     BuildContext context,
     Mensalidade mensalidade, {
@@ -670,6 +680,7 @@ class WebInvoiceHistoryScreen extends StatelessWidget {
     final mesFormatado =
         capitalize(formatadorMesAno.format(mensalidade.mesReferencia));
     final bool isJaneiro = mensalidade.mesReferencia.month == 1;
+    final AlunoComMensalidades? alunoDaFatura = _alunoDaFatura(mensalidade);
     final String anoRef = DateFormat('yyyy').format(mensalidade.mesReferencia);
     final String tituloFatura = isJaneiro
         ? 'Renovação de Matrícula (Janeiro/$anoRef)'
@@ -814,6 +825,36 @@ class WebInvoiceHistoryScreen extends StatelessWidget {
                             color: isDark ? const Color(0xFF34D399) : const Color(0xFF16A34A),
                             fontWeight: FontWeight.w500,
                           ),
+                        ),
+                      ],
+                      if (alunoDaFatura != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person_outline,
+                              size: 15,
+                              color: isDark ? const Color(0xFF60A5FA) : primaryColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                (alunoDaFatura.serieAno != null &&
+                                        alunoDaFatura.serieAno!.isNotEmpty)
+                                    ? '${alunoDaFatura.nomeCompleto} • ${alunoDaFatura.serieAno}'
+                                    : alunoDaFatura.nomeCompleto,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFF60A5FA)
+                                      : primaryColor,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                       const SizedBox(height: 6),
